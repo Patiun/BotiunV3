@@ -11,7 +11,7 @@ token = "oauth:2fsg30d1plxe20drjrb8s3lzwp91l6"
 clientId = "95kreu7tyixtgfqd9oe575hjttox0j"
 
 #Target Channels
-channels = ["patiun"]
+channels = ["patiun","wildguy","kaia","slyyfox","warrkilm"]
 
 irc = socket.socket()
 irc.connect((server, port))
@@ -23,21 +23,48 @@ irc.send(f"CAP REQ :twitch.tv/commands\n".encode('utf-8'))
 for channel in channels:
     irc.send(f"JOIN #{channel}\n".encode('utf-8'))
 
+#Main Loop
 while True:
     respSet = irc.recv(2048).decode('utf-8')
 
     if respSet.startswith('PING'):
         irc.send("PONG\n".encode('utf-8'))
     else:
-        print("New Response Set:")
-        print(respSet)
-        print("---------------------")
+        #print("New Response Set:")
+        #print(respSet)
+        #print("---------------------")
         for resp in respSet.split('\n'):
             if resp:
-                print("+")
-                print(resp)
-                eventType = 
-        print('\n')
+                channel = "[!] Unknown Channel"
+                if (resp.find("#") != -1):
+                    respChannelTokens = resp.split("#")
+                    channel = '#'+respChannelTokens[len(respChannelTokens)-1].strip().split(' ',1)[0]
+
+                if resp.find("JOIN") != -1:
+                    print(resp)
+                    username = resp.strip().split(':')[1].split('!')[0];
+                    print(f"[+] {channel} {username} JOIN EVENT\n")
+                elif resp.find("PART") != -1:
+                    print(resp)
+                    username = resp.strip().split(':')[1].split('!')[0];
+                    print(f"[+] {channel} {username} PART EVENT\n")
+                elif resp.find("PRIVMSG") != -1:
+                    print(resp)
+                    #username = resp.strip().split(':')[1].split('!')[0];
+                    print(f"[+] {channel} {username} MESSAGE EVENT\n")
+                elif resp.find("ACTION") != -1:
+                    print(resp)
+                    #username = resp.strip().split(':')[1].split('!')[0];
+                    print(f"[+] {channel} {username} ACTION EVENT\n")
+                elif resp.find("USERSTATE") != -1:
+                    print(f"[+] {channel} USERSTATE EVENT\n")
+                elif resp.find("ROOMSTATE") != -1:
+                    print(f"[+] {channel} ROOMSTATE EVENT\n")
+                else:
+                    #print("[!] Unkown Event")
+                    #print(resp)
+                    #print('\n')
+                    pass
 
 
 #Tools for the job!
