@@ -11,7 +11,7 @@ token = "oauth:2fsg30d1plxe20drjrb8s3lzwp91l6"
 clientId = "95kreu7tyixtgfqd9oe575hjttox0j"
 
 #Target Channels
-channels = ["patiun","wildguy","kaia","slyyfox","warrkilm"]
+channels = ["rover8680"]
 
 irc = socket.socket()
 irc.connect((server, port))
@@ -42,16 +42,34 @@ while True:
 
                 if resp.find("JOIN") != -1:
                     print(resp)
-                    username = resp.strip().split(':')[1].split('!')[0];
+                    username = resp.strip().split(':')[1].split('!')[0]
                     print(f"[+] {channel} {username} JOIN EVENT\n")
                 elif resp.find("PART") != -1:
                     print(resp)
-                    username = resp.strip().split(':')[1].split('!')[0];
+                    username = resp.strip().split(':')[1].split('!')[0]
                     print(f"[+] {channel} {username} PART EVENT\n")
                 elif resp.find("PRIVMSG") != -1:
-                    print(resp)
-                    #username = resp.strip().split(':')[1].split('!')[0];
-                    print(f"[+] {channel} {username} MESSAGE EVENT\n")
+                    #print(resp.split(' '))
+                    tokens = resp.split(' ')
+                    userdetailsRaw = tokens[0].lstrip('@').split(';')
+                    userdetails = {}
+                    for line in userdetailsRaw :
+                        keyValue = line.split("=")
+                        userdetails[keyValue[0]] = keyValue[1]
+                    username = userdetails['display-name']
+
+                    sections = resp.split("PRIVMSG "+channel)
+                    message = sections[1].strip().lstrip(':')
+
+                    print(f"[+] {channel} {username} MESSAGE EVENT")
+                    print(f"    [-] Message: {message}")
+                    print(f"    [-] Badges: {userdetails['badges']}")
+                    if (int(userdetails['subscriber']) > 0):
+                        print(f"    [!] Subscriber {userdetails['subscriber']}")
+                    if (int(userdetails['mod']) > 0):
+                        print(f"    [!] Moderator {userdetails['mod']}")
+                    #print(f"    [-] Userdetails: {userdetails}\n")
+                    print('')
                 elif resp.find("ACTION") != -1:
                     print(resp)
                     #username = resp.strip().split(':')[1].split('!')[0];
