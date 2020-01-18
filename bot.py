@@ -64,11 +64,12 @@ def main():
                     if resp:
                         channel = "[!] Unknown Channel"
                         if (resp.find("#") != -1): 
-                            respChannelTokens = resp.split("#")
-                            channel = '#' + \
-                                respChannelTokens[len(
-                                    respChannelTokens)-1].strip().split(' ', 1)[0] #TODO This is not always true, if someone uses a #Whaterver it breaks
-                        
+                            respSpaceSplit = resp.split(' ')
+                            for piece in respSpaceSplit:
+                                tempChannel = piece.strip()[1:].lower()
+                                if tempChannel in channels:
+                                    channel = '#'+tempChannel #Channel has #
+                                    break
                         if channel == "[!] Unknown Channel":
                             print(Fore.RED + f'[ERROR] Unable to establish channel.')
                             print(Style.RESET_ALL)# + respSet)
@@ -84,19 +85,15 @@ def main():
                         elif resp.find("ACTION") != -1:
                             handleIRCAction(channel, resp)
                         elif resp.find("USERNOTICE") != -1:
-                            print(resp)
+                            #print(resp)
                             handleIRCUserNotice(channel, resp)
                         elif resp.find("USERSTATE") != -1:
-                            #print(f"[+] {channel} USERSTATE EVENT\n")
                             handleIRCUserState(channel, resp)
                         elif resp.find("ROOMSTATE") != -1:
-                            #print(f"[+] {channel} ROOMSTATE EVENT\n")
                             handleIRCRoomState(channel, resp)
                         elif resp.find("CLEARMSG") != -1:
-                            #TODO Message deleted by Mod login=USERNAME msg= message paylod
                             handleIRCClearMesage(channel, resp)
                         elif resp.find("CLEARCHAT") != -1:
-                            #TODO Chat cleared and user banned username = message payload
                             handleIRCClearChat(channel,resp)
                         else:
                             print("[!] Unkown Event")
@@ -175,30 +172,30 @@ def handleIRCUserJoin(channel, resp):
     usernameArr = resp.strip().split(':')
     if len(usernameArr) > 1:
         username = usernameArr[1].split('!')[0]
-        #print(Fore.MAGENTA + f"[+] {channel} {username} JOIN EVENT")
-        #print(Style.RESET_ALL)
+        print(Fore.MAGENTA + f"[+] {channel} {username} JOIN EVENT")
+        print(Style.RESET_ALL)
     else:
         print(Fore.RED + f"[ERROR] Unable to determine Username in JOIN")
         print(Style.RESET_ALL + resp)
 
-#TODO UNHANDLED
 def handleIRCUserPart(channel, resp):
     username = "UNKNOWN"
     usernameArr = resp.strip().split(':')
     if len(usernameArr) > 1:
         username = usernameArr[1].split('!')[0]
-        #print(Fore.YELLOW + f"[+] {channel} {username} PART EVENT")
-        #print(Style.RESET_ALL)
+        print(Fore.YELLOW + f"[+] {channel} {username} PART EVENT")
+        print(Style.RESET_ALL)
     else:
         print(Fore.RED + f"[ERROR] Unable to determine Username in PART")
         print(Style.RESET_ALL + resp)
 
-#TODO UNHANDLED
 def handleIRCRoomState(channel, resp):
-    pass
+    print(f"[+] {channel} ROOMSTATE EVENT")
+    print(resp)
 
 def handleIRCUserState(channel, resp):
-    pass
+    print(f"[+] {channel} USERSTATE EVENT")
+    print(resp)
 
 def handleIRCClearMesage(channel, resp):
     groups = re.search(r'^@[^\s]+',resp)
