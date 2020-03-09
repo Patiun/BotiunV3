@@ -17,9 +17,10 @@ const serverWS = "ws://irc-ws.chat.twitch.tv";
 const portWS = 80;
 
 //Target Channels
-let channels = ["devinnash", "healthygamer_gg"];
+let channels = ["tabzzhd"];
 let roomstates = {};
 let botstates = {};
+let timers = {};
 
 //current users
 let ignoredUsers = ["botiun", "streamelements", "streamlabs", "nightbot", "moobot"];
@@ -28,22 +29,29 @@ let seenUsers = {};
 
 const irc = new WebSocket(`${serverWS}:${portWS}`);
 
-irc.on('open', function open() {
+irc.on('message', function incoming(data) {
+    processIncomingData(data);
+});
+
+irc.on('open', async function open() {
     irc.send(`PASS ${token}`);
     irc.send(`NICK ${botName.toLowerCase()}`);
     irc.send(`CAP REQ :twitch.tv/membership`);
     irc.send(`CAP REQ :twitch.tv/tags`);
     irc.send(`CAP REQ :twitch.tv/commands`);
     for (let channel of channels) {
-        irc.send(`JOIN #${channel.toLowerCase()}`);
-        users[channel] = [];
-        seenUsers[channel] = [];
+        connectToChannel(channel);
     }
 });
 
-irc.on('message', function incoming(data) {
-    processIncomingData(data);
-});
+function connectToChannel(channel) {
+    irc.send(`JOIN #${channel.toLowerCase()}`);
+    timers[channel] = {
+        connection: setTimeout(() => { alertFailureToConnect(channel); }, 2 * 1000)
+    };
+    users[channel] = [];
+    seenUsers[channel] = [];
+}
 
 //-------------------Console--------------------
 var stdin = process.openStdin();
@@ -62,6 +70,10 @@ stdin.addListener("data", function(d) {
     }
 });
 //-------------------End Console--------------------
+
+function alertFailureToConnect(channel) {
+    console.log("Failed to connect to " + channel);
+}
 
 async function processIncomingData(data) {
     let pingCheck = data.substring(0, 4);
@@ -107,17 +119,20 @@ async function processIncomingData(data) {
                     handleClearChat(channel, payload, metadata);
                     break;
                 case "HOSTTARGET":
-                    console.log("%c[" + event + "] " + timeStamp, 'color: #aaa');
-                    console.log(channel, username, payload, metadata);
+                    handleHostTarget(channel, payload, metadata);
+                    //console.log("%c[" + event + "] " + timeStamp, 'color: #aaa');
+                    //console.log(channel, username, payload, metadata);
                     break;
                 case "NOTICE":
-                    console.log("%c[" + event + "] " + timeStamp, 'color: #aaa');
-                    console.log(channel, username, payload, metadata);
+                    handleNotice(channel, payload, metadata);
+                    //console.log("%c[" + event + "] " + timeStamp, 'color: #aaa');
+                    //console.log(channel, username, payload, metadata);
                     break;
                 case botName.toLowerCase():
                     loadNamesList(username, payload);
                     break;
                 case "*":
+                    //console.log('C', channel, 'U', username, 'P', payload, 'M', metadata);
                     //Ignore this
                     break;
                 default:
@@ -163,6 +178,12 @@ function parseEventData(data) {
                 metaObj[tokenData[0]] = (tokenData.length > 1) ? tokenData[1] : '';
             }
             metadata = metaObj;
+            if (username === 'OSTTARGET') { //TODO Figure out how to fix this instead of this weird case ":tmi.twitch.tv HOSTTARGET #tabzzhd :kippenbro -"
+                event = "HOSTTARGET"; //start[1].trim();
+                username = start[0];
+                channel = start[2].substring(1, start[3].length).trim();
+                payload = start[3].substring(1, start[3].length).trim();
+            }
         }
     } catch (error) {
         console.log(error);
@@ -308,6 +329,24 @@ function handleUserNotice(channel, data) {
     }
 }
 
+function handleNotice(channel, payload, data) {
+    let noticeType = data['msg-id'];
+    switch (noticeType) {
+        case 'host_on':
+            console.log(`${channel} ${payload}`);
+            break;
+        default:
+            console.log("Unnown notice type: " + noticeType);
+            console.log(channel, payload, data);
+            break;
+    }
+}
+
+function handleHostTarget(channel, payload, data) {
+    console.log(`${channel} is targeting a host at ${payload}`);
+    //console.log(data);
+}
+
 function handleRoomState(channel, data) {
     console.log("Current roomstate of " + channel);
     console.log(data);
@@ -320,6 +359,7 @@ function handleRoomState(channel, data) {
 }
 
 function handleUserState(channel, data) {
+    clearTimeout(timers[channel].connection);
     console.log("Connected to " + channel);
     console.log(data);
     if (!botstates[channel]) {
