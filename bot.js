@@ -1,10 +1,16 @@
 const process = require('process');
 const WebSocket = require('ws');
+const fs = require('fs');
+
+//File locations
+const botConfig = require('./botConfig.json');
+const fileChannels = botConfig.files.channels; //'./channels.data';
+const fileIgnoredUsers = botConfig.files.ignoredUsers; //'./ignoredUsers.data';
 
 //Botiun Authentication Stuffs
-const botName = "Botiun";
-const token = "oauth:2fsg30d1plxe20drjrb8s3lzwp91l6";
-const clientId = "95kreu7tyixtgfqd9oe575hjttox0j";
+const botName = botConfig.botName; //"botName";
+const token = botConfig.token; //"oauth:2fsg30d1plxe20drjrb8s3lzwp91l6";
+const clientId = botConfig.clientId; //"95kreu7tyixtgfqd9oe575hjttox0j";
 
 //Badge Details
 //const trackedBadges = ['founder', 'broadcaster', 'bits', 'bits-leader', 'partner', 'moderator', 'vip', 'subscriber', 'premium', 'sub-gift-leader', 'sub-gifter', 'glhf-pledge', 'bits-charity', 'turbo'];
@@ -17,13 +23,13 @@ const serverWS = "ws://irc-ws.chat.twitch.tv";
 const portWS = 80;
 
 //Target Channels
-let channels = ['becca'];
+let channels = [];
 let roomstates = {};
 let botstates = {};
 let timers = {};
 
 //current users
-let ignoredUsers = ["botiun", "streamelements", "streamlabs", "nightbot", "moobot"];
+let ignoredUsers = [];
 let users = {};
 let seenUsers = {};
 
@@ -34,23 +40,51 @@ irc.on('message', function incoming(data) {
 });
 
 irc.on('open', async function open() {
+    await initializeBot();
+
     irc.send(`PASS ${token}`);
     irc.send(`NICK ${botName.toLowerCase()}`);
     irc.send(`CAP REQ :twitch.tv/membership`);
     irc.send(`CAP REQ :twitch.tv/tags`);
     irc.send(`CAP REQ :twitch.tv/commands`);
     for (let channel of channels) {
-        connectToChannel(channel);
+        await connectToChannel(channel);
     }
 });
 
-function connectToChannel(channel) {
-    irc.send(`JOIN #${channel.toLowerCase()}`);
+async function connectToChannel(channel) {
+    users[channel] = [];
+    seenUsers[channel] = [];
     timers[channel] = {
         connection: setTimeout(() => { alertFailureToConnect(channel); }, 2 * 1000)
     };
-    users[channel] = [];
-    seenUsers[channel] = [];
+
+    irc.send(`JOIN #${channel.toLowerCase()}`);
+
+    return;
+}
+
+async function initializeBot() {
+    try {
+        //Load ignored users
+        let ignoredUserData = fs.readFileSync(fileIgnoredUsers, 'utf8');
+        ignoredUsers = ignoredUserData.split('\n').map(x => {
+            return x.trim().toLowerCase();
+        });
+
+        //Load channels
+        let channelsData = fs.readFileSync(fileChannels, 'utf8');
+        channels = channelsData.split('\n').map(x => {
+            return x.trim().toLowerCase();
+        });
+
+        console.log(`${botName} is online!`);
+        return;
+    } catch (error) {
+        console.log("Error intializing Bot");
+        console.log(error);
+        return;
+    }
 }
 
 //-------------------Console--------------------
@@ -87,6 +121,12 @@ stdin.addListener("data", function(d) {
                 sendMessage(channel, message);
             }
             break;
+        case 'registerbot':
+            if (inputParams.length >= 2) {
+                let username = inputParams[1];
+                registerIgnoredUser(username);
+            }
+            break;
         default:
             break;
     }
@@ -97,6 +137,10 @@ function alertFailureToConnect(channel) {
     console.log("Failed to connect to " + channel);
     let channelIndex = channels.indexOf(channel);
     channels.splice(channelIndex, 1);
+}
+
+function registerIgnoredUser(username) {
+    ignoredUsers.push(username);
 }
 
 async function processIncomingData(data) {
@@ -416,7 +460,9 @@ function loadNamesList(code, namesListData) {
         let time = (new Date()).getTime();
         for (let i = 0; i < remainingUsers.length; i++) {
             let username = remainingUsers[i];
-            handleJoin(channel, username, { timeStamp: time });
+            if (ignoredUsers.indexOf(username) === -1) {
+                handleJoin(channel, username, { timeStamp: time });
+            }
         }
     }
 }
