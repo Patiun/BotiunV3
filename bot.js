@@ -64,6 +64,16 @@ async function connectToChannel(channel) {
     return;
 }
 
+async function registerChannel(channel) {
+    channels.push(channel);
+    //Write channel name to channels files
+}
+
+function registerIgnoredUser(username) {
+    ignoredUsers.push(username);
+    //Write username to ignored user files
+}
+
 async function initializeBot() {
     try {
         //Load ignored users
@@ -109,7 +119,7 @@ stdin.addListener("data", function(d) {
                     break;
                 } else {
                     console.log("Tryin to conenct to " + channel);
-                    channels.push(channel);
+                    registerChannel(channel);
                     connectToChannel(channel);
                 }
             }
@@ -137,10 +147,6 @@ function alertFailureToConnect(channel) {
     console.log("Failed to connect to " + channel);
     let channelIndex = channels.indexOf(channel);
     channels.splice(channelIndex, 1);
-}
-
-function registerIgnoredUser(username) {
-    ignoredUsers.push(username);
 }
 
 async function processIncomingData(data) {
