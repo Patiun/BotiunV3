@@ -17,7 +17,7 @@ const serverWS = "ws://irc-ws.chat.twitch.tv";
 const portWS = 80;
 
 //Target Channels
-let channels = ["tabzzhd"];
+let channels = ['devinnash'];
 let roomstates = {};
 let botstates = {};
 let timers = {};
@@ -58,12 +58,27 @@ var stdin = process.openStdin();
 
 stdin.addListener("data", function(d) {
     let inputString = d.toString().trim();
-    switch (inputString.toLowerCase()) {
+    let inputParams = inputString.split(' ');
+    let command = inputParams[0];
+    switch (command.toLowerCase()) {
         case 'who':
             console.log(users);
             break;
         case 'seen':
             console.log(seenUsers);
+            break;
+        case 'connect':
+            if (inputParams.length > 1) {
+                let target = inputParams[1].toLowerCase();
+                if (channels.includes(target)) {
+                    console.log(channel + " was already connected to.");
+                    break;
+                } else {
+                    console.log("Tryin to conenct to " + target);
+                    channels.push(target);
+                    connectToChannel(target);
+                }
+            }
             break;
         default:
             break;
@@ -73,6 +88,8 @@ stdin.addListener("data", function(d) {
 
 function alertFailureToConnect(channel) {
     console.log("Failed to connect to " + channel);
+    let channelIndex = channels.indexOf(channel);
+    channels.splice(channelIndex, 1);
 }
 
 async function processIncomingData(data) {
