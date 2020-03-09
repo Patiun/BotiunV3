@@ -4,7 +4,7 @@ const token = "oauth:2fsg30d1plxe20drjrb8s3lzwp91l6";
 const clientId = "95kreu7tyixtgfqd9oe575hjttox0j";
 
 //Badge Details
-//const trackedBadges = ['founder', 'broadcaster', 'bits', 'bits-leader', 'partner', 'moderator', 'vip', 'subscriber', 'premium', 'sub-gift-leader', 'sub-gifter', 'glhf-pledge', 'bits-charity'];
+//const trackedBadges = ['founder', 'broadcaster', 'bits', 'bits-leader', 'partner', 'moderator', 'vip', 'subscriber', 'premium', 'sub-gift-leader', 'sub-gifter', 'glhf-pledge', 'bits-charity', 'turbo'];
 //let unknownBadges = [];
 
 //Server Details
@@ -14,11 +14,14 @@ const serverWS = "ws://irc-ws.chat.twitch.tv";
 const portWS = 80;
 
 //Target Channels
-let channels = ["twoangrygamerstv"];
+let channels = ["twoangrygamerstv", "devinnash"];
+let roomestates = {};
+let botstates = {};
 
 //current users
 let ignoredUsers = ["botiun", "streamelements", "streamlabs", "nightbot", "moobot"];
 let users = {};
+let seenUsers = {};
 
 const WebSocket = require('ws');
 
@@ -33,6 +36,7 @@ irc.on('open', function open() {
     for (let channel of channels) {
         irc.send(`JOIN #${channel.toLowerCase()}`);
         users[channel] = [];
+        seenUsers[channel] = [];
     }
 });
 
@@ -50,7 +54,6 @@ async function processIncomingData(data) {
     for (let eventData of events) {
         if (eventData) {
             let timeStamp = (new Date()).getTime();
-            //console.log(timeStamp + " --> " + data);
             const { event, channel, username, metadata, payload } = parseEventData(eventData);
             if (ignoredUsers.includes(username)) {
                 continue;
@@ -81,15 +84,15 @@ async function processIncomingData(data) {
                     handleRoomState(channel, metadata);
                     break;
                 case "CLEARCHAT":
-                    console.log("%c[!!!] " + event + " " + timeStamp, 'color: #ff0000');
+                    console.log("%c[" + event + "] " + timeStamp, 'color: #ff0000');
                     handleClearChat(channel, payload, metadata);
                     break;
                 case "HOSTTARGET":
-                    console.log("%c[!!!] " + event + " " + timeStamp, 'color: #aaa');
+                    console.log("%c[" + event + "] " + timeStamp, 'color: #aaa');
                     console.log(channel, username, payload, metadata);
                     break;
                 case "NOTICE":
-                    console.log("%c[!!!] " + event + " " + timeStamp, 'color: #aaa');
+                    console.log("%c[" + event + "] " + timeStamp, 'color: #aaa');
                     console.log(channel, username, payload, metadata);
                     break;
                 case botName.toLowerCase():
@@ -159,6 +162,7 @@ function handleJoin(channel, username, data) {
     let indexOfUsername = users[channel].indexOf(username);
     if (indexOfUsername === -1) {
         users[channel].push(username);
+        seenUsers[channel].push(username);
     }
 }
 
@@ -224,6 +228,9 @@ function handleMessage(channel, username, payload, data) {
                 case 'glhf-pledge':
                     badgeOutput += ' [glhf]';
                     break;
+                case 'turbo':
+                    badgeOutput += ' [T]';
+                    break;
                 default:
                     badgeOutput += ' [?' + badgeLineData[1] + ']';
                     console.log(badgeData);
@@ -232,7 +239,12 @@ function handleMessage(channel, username, payload, data) {
         }
     }
 
-    console.log("%c" + username + badgeOutput + ': ' + payload, 'color: #bada55')
+    console.log("%c" + username + badgeOutput + ': ' + payload, 'color: #bada55');
+
+    if (!seenUsers[channel].includes(username)) {
+        console.log(username + " chatted before we saw them in #" + channel);
+        handleJoin(channel, username, data); //May be adding people who just left or will never register as leaving and may stay in the list forever
+    }
 }
 
 function handleUserNotice(channel, data) {
@@ -248,6 +260,16 @@ function handleUserNotice(channel, data) {
         case 'giftpaidupgrade':
             console.log(`${username} is continuing a gifted sub to ${channel}! (${data.timeStamp})`);
             break;
+        case 'submysterygift':
+            console.log(`${username} is gifting ${data['msg-param-mass-gift-count']} sub(s) to #${channel}! (${data.timeStamp})`);
+            break;
+        case 'subgift':
+            console.log(`${data['msg-param-recipient-display-name']} received a gifted sub to from ${username} to #${channel}! (${data.timeStamp})`);
+            break;
+        case 'ritual':
+            console.log(`A ritual (${data['msg-param-ritual-name']}) for ${username} has occured in #${channel} (${data.timeStamp})`);
+            console.log(data);
+            break;
         default:
             console.log('Unknown Notice event: ' + msgId);
             console.log(data);
@@ -258,11 +280,23 @@ function handleUserNotice(channel, data) {
 function handleRoomState(channel, data) {
     console.log("Current roomstate of " + channel);
     console.log(data);
+    if (!roomestates[channel]) {
+        roomestates[channel] = data;
+    } else {
+        //Compare to last roomstate
+        roomestates[channel] = data;
+    }
 }
 
 function handleUserState(channel, data) {
     console.log("Connected to " + channel);
     console.log(data);
+    if (!botstates[channel]) {
+        botstates[channel] = data;
+    } else {
+        //Compare to last roomstate
+        botstates[channel] = data;
+    }
 }
 
 function handleClearChat(channel, username, data) {
