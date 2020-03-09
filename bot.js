@@ -17,8 +17,8 @@ const serverWS = "ws://irc-ws.chat.twitch.tv";
 const portWS = 80;
 
 //Target Channels
-let channels = ["twoangrygamerstv", "devinnash"];
-let roomestates = {};
+let channels = ["devinnash", "healthygamer_gg"];
+let roomstates = {};
 let botstates = {};
 
 //current users
@@ -45,15 +45,23 @@ irc.on('message', function incoming(data) {
     processIncomingData(data);
 });
 
+//-------------------Console--------------------
 var stdin = process.openStdin();
 
 stdin.addListener("data", function(d) {
-    // note:  d is an object, and when converted to a string it will
-    // end with a linefeed.  so we (rather crudely) account for that  
-    // with toString() and then trim() 
-    console.log("you entered: [" +
-        d.toString().trim() + "]");
+    let inputString = d.toString().trim();
+    switch (inputString.toLowerCase()) {
+        case 'who':
+            console.log(users);
+            break;
+        case 'seen':
+            console.log(seenUsers);
+            break;
+        default:
+            break;
+    }
 });
+//-------------------End Console--------------------
 
 async function processIncomingData(data) {
     let pingCheck = data.substring(0, 4);
@@ -95,7 +103,7 @@ async function processIncomingData(data) {
                     handleRoomState(channel, metadata);
                     break;
                 case "CLEARCHAT":
-                    console.log("%c[" + event + "] " + timeStamp, 'color: #ff0000');
+                    //console.log("%c[" + event + "] " + timeStamp, 'color: #ff0000');
                     handleClearChat(channel, payload, metadata);
                     break;
                 case "HOSTTARGET":
@@ -303,11 +311,11 @@ function handleUserNotice(channel, data) {
 function handleRoomState(channel, data) {
     console.log("Current roomstate of " + channel);
     console.log(data);
-    if (!roomestates[channel]) {
-        roomestates[channel] = data;
+    if (!roomstates[channel]) {
+        roomstates[channel] = data;
     } else {
         //Compare to last roomstate
-        roomestates[channel] = data;
+        roomstates[channel] = data;
     }
 }
 
@@ -330,8 +338,8 @@ function handleClearChat(channel, username, data) {
         duration = ' ' + duration;
         duration += ' seconds';
     }
-    console.log(data);
-    console.log(`${username} was banned on ${channel}'s channel for${duration}`);
+    console.log(`%c[CLEARCHAT] ${username} was banned on ${channel}'s channel for${duration}`, 'color: #ff0000');
+    //console.log(data);
     //TODO remove last X chats from history
     handlePart(channel, username, data); //Remove user from stream when banned
 }

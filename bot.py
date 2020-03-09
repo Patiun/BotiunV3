@@ -17,7 +17,7 @@ token = "oauth:2fsg30d1plxe20drjrb8s3lzwp91l6"
 clientId = "95kreu7tyixtgfqd9oe575hjttox0j"
 
 # Target Channels
-channels = ["baldbeardedbuilder","patiun", "warrkilm"]
+channels = ["invadervie","patiun", "warrkilm"]
 
 #current users
 ignoredUsers = ["botiun","streamelements","streamlabs","nightbot"]
