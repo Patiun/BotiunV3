@@ -427,3 +427,7 @@ function sendMessage(channel, message) {
         irc.send(`PRIVMSG #${channel} :${message}`);
     }
 }
+
+function sendMessageToUser(channel, username, message) {
+    sendMessage(channel, `@${username} ${message}`);
+}
