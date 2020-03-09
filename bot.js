@@ -4,10 +4,8 @@ const token = "oauth:2fsg30d1plxe20drjrb8s3lzwp91l6";
 const clientId = "95kreu7tyixtgfqd9oe575hjttox0j";
 
 //Badge Details
-const trackedBadges = ['founder', 'broadcaster', 'bits', 'bits-leader', 'partner', 'moderator', 'vip',
-    'subscriber', 'premium', 'sub-gift-leader', 'sub-gifter', 'glhf-pledge', 'bits-charity'
-];
-let unknownBadges = [];
+//const trackedBadges = ['founder', 'broadcaster', 'bits', 'bits-leader', 'partner', 'moderator', 'vip', 'subscriber', 'premium', 'sub-gift-leader', 'sub-gifter', 'glhf-pledge', 'bits-charity'];
+//let unknownBadges = [];
 
 //Server Details
 const serverIRC = "irc://irc.chat.twitch.tv";
@@ -19,7 +17,7 @@ const portWS = 80;
 let channels = ["twoangrygamerstv"];
 
 //current users
-let ignoredUsers = ["botiun", "streamelements", "streamlabs", "nightbot"];
+let ignoredUsers = ["botiun", "streamelements", "streamlabs", "nightbot", "moobot"];
 let users = {};
 
 const WebSocket = require('ws');
@@ -59,8 +57,8 @@ async function processIncomingData(data) {
             }
             switch (event) {
                 case "PRIVMSG":
-                    //console.log("%c[!!!] " + event + " " + timeStamp, 'color: #bada55');
-                    //console.log(channel, username, payload, metadata);
+                    metadata.timeStamp = timeStamp;
+                    handleMessage(channel, username, payload, metadata);
                     break;
                 case "JOIN":
                     console.log("%c[" + event + "] " + username + " joined #" + channel + " at " + timeStamp, 'color: #00ff00');
@@ -71,28 +69,20 @@ async function processIncomingData(data) {
                     handlePart(channel, username, { timeStamp: timeStamp });
                     break;
                 case "USERSTATE":
-                    //console.log("%c[!!!] " + event + " " + timeStamp, 'color: #aaa');
-                    //console.log(channel, username, payload, metadata);
                     metadata.timeStamp = timeStamp;
                     handleUserState(channel, metadata);
                     break;
                 case "USERNOTICE":
-                    //console.log("%c[!!!] " + event + " " + timeStamp, 'color: #aaa');
-                    //console.log('Chanel: ', channel, 'Username: ', username, 'Payload: ', payload, 'Metadata: ', metadata);
                     metadata.timeStamp = timeStamp;
                     handleUserNotice(channel, metadata);
                     break;
                 case "ROOMSTATE":
-                    //console.log("%c[!!!] " + event + " " + timeStamp, 'color: #aaa');
-                    //console.log(channel, username, payload, metadata);
                     metadata.timeStamp = timeStamp;
                     handleRoomState(channel, metadata);
                     break;
                 case "CLEARCHAT":
                     console.log("%c[!!!] " + event + " " + timeStamp, 'color: #ff0000');
-                    //console.log(channel, username, payload, metadata);
                     handleClearChat(channel, payload, metadata);
-                    //payload === the banned user
                     break;
                 case "HOSTTARGET":
                     console.log("%c[!!!] " + event + " " + timeStamp, 'color: #aaa');
@@ -177,6 +167,72 @@ function handlePart(channel, username, data) {
     if (indexOfUsername != -1) {
         users[channel].splice(indexOfUsername, 1);
     }
+}
+
+function handleMessage(channel, username, payload, data) {
+    console.log("%c[MESSAGE] #" + channel + ' @ ' + data.timeStamp, 'color: #bada55');
+    //get badges from data
+    let rawBadgeString = data.badges;
+    let badgeData = {};
+    let badgeOutput = '';
+    if (rawBadgeString.length > 0) {
+        rawBadgeData = rawBadgeString.split(',');
+        for (let i = 0; i < rawBadgeData.length; i++) {
+            let badgeLine = rawBadgeData[i];
+            badgeLineData = badgeLine.split('/');
+            if (badgeLineData.lenght < 2) {
+                badgeLineData.push(0);
+            }
+            badgeData[badgeLineData[0]] = parseInt(badgeLineData[1]);
+            switch (badgeLineData[0]) {
+                case 'founder':
+                    badgeOutput += ' [F' + badgeLineData[1] + ']';
+                    break;
+                case 'moderator':
+                    badgeOutput += ' [MOD]';
+                    break;
+                case 'subscriber':
+                    badgeOutput += ' [S' + badgeLineData[1] + ']';
+                    break;
+                case 'sub-gift-leader':
+                    badgeOutput += ' [SGL' + badgeLineData[1] + ']';
+                    break;
+                case 'sub-gifter':
+                    badgeOutput += ' [SG' + badgeLineData[1] + ']';
+                    break;
+                case 'vip':
+                    badgeOutput += ' [VIP]';
+                    break;
+                case 'broadcaster':
+                    badgeOutput += ' [Streamer]';
+                    break;
+                case 'bits':
+                    badgeOutput += ' [B' + badgeLineData[1] + ']';
+                    break;
+                case 'bits-charity':
+                    badgeOutput += ' [BC' + badgeLineData[1] + ']';
+                    break;
+                case 'bits-leader':
+                    badgeOutput += ' [BL' + badgeLineData[1] + ']';
+                    break;
+                case 'premium':
+                    badgeOutput += ' [TP]';
+                    break;
+                case 'partner':
+                    badgeOutput += ' [P*]';
+                    break;
+                case 'glhf-pledge':
+                    badgeOutput += ' [glhf]';
+                    break;
+                default:
+                    badgeOutput += ' [?' + badgeLineData[1] + ']';
+                    console.log(badgeData);
+                    break;
+            }
+        }
+    }
+
+    console.log("%c" + username + badgeOutput + ': ' + payload, 'color: #bada55')
 }
 
 function handleUserNotice(channel, data) {
