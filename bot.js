@@ -17,7 +17,7 @@ const serverWS = "ws://irc-ws.chat.twitch.tv";
 const portWS = 80;
 
 //Target Channels
-let channels = ['devinnash'];
+let channels = ['becca'];
 let roomstates = {};
 let botstates = {};
 let timers = {};
@@ -69,15 +69,22 @@ stdin.addListener("data", function(d) {
             break;
         case 'connect':
             if (inputParams.length > 1) {
-                let target = inputParams[1].toLowerCase();
-                if (channels.includes(target)) {
+                let channel = inputParams[1].toLowerCase();
+                if (channels.includes(channel)) {
                     console.log(channel + " was already connected to.");
                     break;
                 } else {
-                    console.log("Tryin to conenct to " + target);
-                    channels.push(target);
-                    connectToChannel(target);
+                    console.log("Tryin to conenct to " + channel);
+                    channels.push(channel);
+                    connectToChannel(channel);
                 }
+            }
+            break;
+        case 'send':
+            if (inputParams.length >= 3) {
+                let channel = inputParams[1].toLowerCase();
+                let message = (inputParams.splice(2, inputParams.length)).join(' ');
+                sendMessage(channel, message);
             }
             break;
         default:
@@ -377,8 +384,7 @@ function handleRoomState(channel, data) {
 
 function handleUserState(channel, data) {
     clearTimeout(timers[channel].connection);
-    console.log("Connected to " + channel);
-    console.log(data);
+    //console.log(data);
     if (!botstates[channel]) {
         botstates[channel] = data;
     } else {
@@ -412,5 +418,12 @@ function loadNamesList(code, namesListData) {
             let username = remainingUsers[i];
             handleJoin(channel, username, { timeStamp: time });
         }
+    }
+}
+
+function sendMessage(channel, message) {
+    console.log("Trying to send message to " + channel + ": " + message);
+    if (channels.indexOf(channel) > -1) {
+        irc.send(`PRIVMSG #${channel} :${message}`);
     }
 }
