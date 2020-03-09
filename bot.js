@@ -1,3 +1,6 @@
+const process = require('process');
+const WebSocket = require('ws');
+
 //Botiun Authentication Stuffs
 const botName = "Botiun";
 const token = "oauth:2fsg30d1plxe20drjrb8s3lzwp91l6";
@@ -5,7 +8,7 @@ const clientId = "95kreu7tyixtgfqd9oe575hjttox0j";
 
 //Badge Details
 //const trackedBadges = ['founder', 'broadcaster', 'bits', 'bits-leader', 'partner', 'moderator', 'vip', 'subscriber', 'premium', 'sub-gift-leader', 'sub-gifter', 'glhf-pledge', 'bits-charity', 'turbo'];
-//let unknownBadges = [];
+let unknownBadges = [];
 
 //Server Details
 const serverIRC = "irc://irc.chat.twitch.tv";
@@ -22,8 +25,6 @@ let botstates = {};
 let ignoredUsers = ["botiun", "streamelements", "streamlabs", "nightbot", "moobot"];
 let users = {};
 let seenUsers = {};
-
-const WebSocket = require('ws');
 
 const irc = new WebSocket(`${serverWS}:${portWS}`);
 
@@ -42,6 +43,16 @@ irc.on('open', function open() {
 
 irc.on('message', function incoming(data) {
     processIncomingData(data);
+});
+
+var stdin = process.openStdin();
+
+stdin.addListener("data", function(d) {
+    // note:  d is an object, and when converted to a string it will
+    // end with a linefeed.  so we (rather crudely) account for that  
+    // with toString() and then trim() 
+    console.log("you entered: [" +
+        d.toString().trim() + "]");
 });
 
 async function processIncomingData(data) {
@@ -188,6 +199,9 @@ function handleMessage(channel, username, payload, data) {
                 badgeLineData.push(0);
             }
             badgeData[badgeLineData[0]] = parseInt(badgeLineData[1]);
+            if (badgeLineData[0].substring(0, 9) === 'twitchcon') {
+                badgeLineData[0] = 'twitchcon';
+            }
             switch (badgeLineData[0]) {
                 case 'founder':
                     badgeOutput += ' [F' + badgeLineData[1] + ']';
@@ -231,9 +245,18 @@ function handleMessage(channel, username, payload, data) {
                 case 'turbo':
                     badgeOutput += ' [T]';
                     break;
+                case 'hype-train':
+                    badgeOutput += ' [HT' + badgeLineData[1] + ']';
+                    break;
+                case 'twitchcon':
+                    badgeOutput += ' [TC]';
+                    break;
                 default:
                     badgeOutput += ' [?' + badgeLineData[1] + ']';
-                    console.log(badgeData);
+                    if (!unknownBadges.includes(badgeLineData[0])) {
+                        unknownBadges.push(badgeLineData[0]);
+                        console.log("New Badge Seen: " + badgeLineData[0]);
+                    }
                     break;
             }
         }
@@ -242,7 +265,7 @@ function handleMessage(channel, username, payload, data) {
     console.log("%c" + username + badgeOutput + ': ' + payload, 'color: #bada55');
 
     if (!seenUsers[channel].includes(username)) {
-        console.log(username + " chatted before we saw them in #" + channel);
+        //console.log(username + " chatted before we saw them in #" + channel);
         handleJoin(channel, username, data); //May be adding people who just left or will never register as leaving and may stay in the list forever
     }
 }
@@ -309,6 +332,8 @@ function handleClearChat(channel, username, data) {
     }
     console.log(data);
     console.log(`${username} was banned on ${channel}'s channel for${duration}`);
+    //TODO remove last X chats from history
+    handlePart(channel, username, data); //Remove user from stream when banned
 }
 
 function loadNamesList(code, namesListData) {
