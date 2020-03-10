@@ -192,6 +192,9 @@ async function processIncomingData(data) {
                     //console.log("%c[" + event + "] " + timeStamp, 'color: #ff0000');
                     handleClearChat(channel, payload, metadata);
                     break;
+                case "CLEARMSG":
+                    handleClearMessage(channel, payload, metadata); //@login=poolfullofghoul;room-id=;target-msg-id=4b37e4f4-0534-4b65-ac3f-8f49c9e368ea;tmi-sent-ts=1583850112426 :tmi.twitch.tv CLEARMSG #invadervie :simping for my gf
+                    break;
                 case "HOSTTARGET":
                     handleHostTarget(channel, payload, metadata);
                     //console.log("%c[" + event + "] " + timeStamp, 'color: #aaa');
@@ -376,6 +379,9 @@ function handleMessage(channel, username, payload, data) {
 function handleUserNotice(channel, data) {
     let msgId = data['msg-id'];
     let username = data['display-name'];
+    //system-msg:"mastopro\ssubscribed\swith\sTwitch\sPrime."
+    //msg-param-sub-plan:"Prime"
+    //msg-param-sub-plan-name:"Channel\sSubscription\s(invader_vie)"
     switch (msgId) {
         case 'sub':
             console.log(`${username} subbed to ${channel}! (${data.timeStamp})`);
@@ -401,6 +407,7 @@ function handleUserNotice(channel, data) {
             console.log(data);
             break;
     }
+    console.log(data);
 }
 
 function handleNotice(channel, payload, data) {
@@ -455,6 +462,12 @@ function handleClearChat(channel, username, data) {
     //console.log(data);
     //TODO remove last X chats from history
     handlePart(channel, username, data); //Remove user from stream when banned
+}
+
+function handleClearMessage(channel, payload, data) {
+    let username = data.login;
+    console.log(`%c[CLEARCHAT] ${username}'s message "${payload}" was cleared on ${channel}'s channel`, 'color: #ff0000');
+    //TODO remove message from chat history
 }
 
 function loadNamesList(code, namesListData) {
