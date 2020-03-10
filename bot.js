@@ -432,7 +432,7 @@ function handleUserNotice(channel, payload, data) {
             if (payload) {
                 console.log('Message: ' + payload);
             }
-            console.log(data);
+            //console.log(data);
             break;
         case 'raid':
             username = data['msg-param-displayName'];
@@ -505,15 +505,19 @@ function handleClearChat(channel, username, data) {
         duration = ' ' + duration;
         duration += ' seconds';
     }
-    console.log(`\n%c[CLEARCHAT] ${username} was banned on ${channel}'s channel for${duration} @ ${data.timeStamp}`, 'color: #ff0000');
+    console.log(`\n%c[CLEARCHAT] ${username} was banned on ${channel}'s channel for${duration} @ ${(new Date(data.timeStamp)).toLocaleString()}`, 'color: #ff0000');
     if (messages[channel][username] && messages[channel][username].length > 0) {
         let count = (messages[channel][username].length < 5) ? messages[channel][username].length : 5;
         for (let i = 1; i < count + 1; i++) {
-            console.log("Last message: " + messages[channel][username][messages[channel][username].length - i].message + " @ " + messages[channel][username][messages[channel][username].length - i].timeStamp);
+            console.log("Last message: " + messages[channel][username][messages[channel][username].length - i].message + " @ " + (new Date(messages[channel][username][messages[channel][username].length - i].timeStamp)).toLocaleString());
         }
     }
     //console.log(data);
-    removeLastMessagesForUser(channel, username, 5); //remove last X chats from history
+    if (data['ban-duration']) {
+        removeLastMessagesForUser(channel, username, 5); //remove last X chats from history
+    } else {
+        removeAllMessagesForUser(channel, username);
+    }
     handlePart(channel, username, data); //Remove user from stream when banned
 }
 
@@ -589,5 +593,11 @@ function removeLastMessagesForUser(channel, username, messageCount) {
         }
     } else {
         console.log("No messages to remove from for " + username + " is " + channel + "'s channel");
+    }
+}
+
+function removeAllMessagesForUser(channel, username) {
+    if (messages[channel][username]) {
+        delete messages[channel][username];
     }
 }
