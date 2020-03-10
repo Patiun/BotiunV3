@@ -184,7 +184,7 @@ async function processIncomingData(data) {
                     break;
                 case "USERNOTICE":
                     metadata.timeStamp = timeStamp;
-                    handleUserNotice(channel, metadata);
+                    handleUserNotice(channel, payload, metadata);
                     break;
                 case "ROOMSTATE":
                     metadata.timeStamp = timeStamp;
@@ -361,7 +361,7 @@ function handleMessage(channel, username, payload, data) {
                     badgeOutput += ' [TC]';
                     break;
                 case 'staff':
-                    bagesOutput += ' [Staff]';
+                    badgeOutput += ' [Staff]';
                     break;
                 default:
                     badgeOutput += ' [?' + badgeLineData[1] + ']';
@@ -374,8 +374,8 @@ function handleMessage(channel, username, payload, data) {
         }
     }
 
-    console.log("%c\n[MESSAGE] #" + channel + ' @ ' + data.timeStamp, 'color: #bada55');
-    console.log("%c" + username + badgeOutput + ': ' + payload, 'color: #bada55');
+    //console.log("%c\n[MESSAGE] #" + channel + ' @ ' + data.timeStamp, 'color: #bada55');
+    //console.log("%c" + username + badgeOutput + ': ' + payload, 'color: #bada55');
     saveMessageFromUser(channel, username, payload, badgeData, data);
     if (!seenUsers[channel].includes(username)) {
         //console.log(username + " chatted before we saw them in #" + channel);
@@ -383,7 +383,7 @@ function handleMessage(channel, username, payload, data) {
     }
 }
 
-function handleUserNotice(channel, data) {
+function handleUserNotice(channel, payload, data) {
     let msgId = data['msg-id'];
     let username = data['display-name'];
     //system-msg:"mastopro\ssubscribed\swith\sTwitch\sPrime."
@@ -392,21 +392,39 @@ function handleUserNotice(channel, data) {
     switch (msgId) {
         case 'sub':
             console.log(`\n${username} subbed to ${channel}! (${data.timeStamp})`);
+            if (payload) {
+                console.log('Message: ' + payload);
+            }
             break;
         case 'resub':
             console.log(`\n${username} resubbed to ${channel} for ${data['msg-param-cumulative-months']} months! (${data.timeStamp})`);
+            if (payload) {
+                console.log('Message: ' + payload);
+            }
             break;
         case 'giftpaidupgrade':
             console.log(`\n${username} is continuing a gifted sub to ${channel}! (${data.timeStamp})`);
+            if (payload) {
+                console.log('Message: ' + payload);
+            }
             break;
         case 'submysterygift':
             console.log(`\n${username} is gifting ${data['msg-param-mass-gift-count']} sub(s) to #${channel}! (${data.timeStamp})`);
+            if (payload) {
+                console.log('Message: ' + payload);
+            }
             break;
         case 'subgift':
             console.log(`\n${data['msg-param-recipient-display-name']} received a gifted sub to from ${username} to #${channel}! (${data.timeStamp})`);
+            if (payload) {
+                console.log('Message: ' + payload);
+            }
             break;
         case 'ritual':
             console.log(`\nA ritual (${data['msg-param-ritual-name']}) for ${username} has occured in #${channel} (${data.timeStamp})`);
+            if (payload) {
+                console.log('Message: ' + payload);
+            }
             console.log(data);
             break;
         default:
@@ -414,7 +432,6 @@ function handleUserNotice(channel, data) {
             console.log(data);
             break;
     }
-    console.log(data);
 }
 
 function handleNotice(channel, payload, data) {
@@ -469,7 +486,7 @@ function handleClearChat(channel, username, data) {
     if (messages[channel][username] && messages[channel][username].length > 0) {
         let count = (messages[channel][username].length < 5) ? messages[channel][username].length : 5;
         for (let i = 1; i < count + 1; i++) {
-            console.log("Last message: " + messages[channel][username][messages[channel][username].length - i].message + " @ " + messages[channel][username][messages[channel][username].length - 1].timeStamp);
+            console.log("Last message: " + messages[channel][username][messages[channel][username].length - i].message + " @ " + messages[channel][username][messages[channel][username].length - i].timeStamp);
         }
     }
     //console.log(data);
