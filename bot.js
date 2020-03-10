@@ -369,8 +369,8 @@ function handleMessage(channel, username, payload, data) {
         }
     }
 
-    //console.log("%c[MESSAGE] #" + channel + ' @ ' + data.timeStamp, 'color: #bada55');
-    //console.log("%c" + username + badgeOutput + ': ' + payload, 'color: #bada55');
+    console.log("%c[MESSAGE] #" + channel + ' @ ' + data.timeStamp, 'color: #bada55');
+    console.log("%c" + username + badgeOutput + ': ' + payload + "\n", 'color: #bada55');
     saveMessageFromUser(channel, username, payload, badgeData, data);
     if (!seenUsers[channel].includes(username)) {
         //console.log(username + " chatted before we saw them in #" + channel);
