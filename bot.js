@@ -32,6 +32,7 @@ let timers = {};
 let ignoredUsers = [];
 let users = {};
 let seenUsers = {};
+let messages = {};
 
 const irc = new WebSocket(`${serverWS}:${portWS}`);
 
@@ -55,6 +56,7 @@ irc.on('open', async function open() {
 async function connectToChannel(channel) {
     users[channel] = [];
     seenUsers[channel] = [];
+    messages[channel] = {};
     timers[channel] = {
         connection: setTimeout(() => { alertFailureToConnect(channel); }, 2 * 1000)
     };
@@ -169,11 +171,11 @@ async function processIncomingData(data) {
                     handleMessage(channel, username, payload, metadata);
                     break;
                 case "JOIN":
-                    console.log("%c[" + event + "] " + username + " joined #" + channel + " at " + timeStamp, 'color: #00ff00');
+                    //console.log("%c[" + event + "] " + username + " joined #" + channel + " at " + timeStamp, 'color: #00ff00');
                     handleJoin(channel, username, { timeStamp: timeStamp });
                     break;
                 case "PART":
-                    console.log("%c[" + event + "] " + username + " parted #" + channel + " at " + timeStamp, 'color: #aa00aa');
+                    //console.log("%c[" + event + "] " + username + " parted #" + channel + " at " + timeStamp, 'color: #aa00aa');
                     handlePart(channel, username, { timeStamp: timeStamp });
                     break;
                 case "USERSTATE":
@@ -291,7 +293,6 @@ function handlePart(channel, username, data) {
 }
 
 function handleMessage(channel, username, payload, data) {
-    console.log("%c[MESSAGE] #" + channel + ' @ ' + data.timeStamp, 'color: #bada55');
     //get badges from data
     let rawBadgeString = data.badges;
     let badgeData = {};
@@ -368,8 +369,9 @@ function handleMessage(channel, username, payload, data) {
         }
     }
 
-    console.log("%c" + username + badgeOutput + ': ' + payload, 'color: #bada55');
-
+    //console.log("%c[MESSAGE] #" + channel + ' @ ' + data.timeStamp, 'color: #bada55');
+    //console.log("%c" + username + badgeOutput + ': ' + payload, 'color: #bada55');
+    saveMessageFromUser(channel, username, payload, badgeData, data);
     if (!seenUsers[channel].includes(username)) {
         //console.log(username + " chatted before we saw them in #" + channel);
         handleJoin(channel, username, data); //May be adding people who just left or will never register as leaving and may stay in the list forever
@@ -459,15 +461,18 @@ function handleClearChat(channel, username, data) {
         duration += ' seconds';
     }
     console.log(`%c[CLEARCHAT] ${username} was banned on ${channel}'s channel for${duration}`, 'color: #ff0000');
+    if (messages[channel][username]) {
+        console.log("Last message: " + messages[channel][username][messages[channel][username].length - 1].message);
+    }
     //console.log(data);
-    //TODO remove last X chats from history
+    removeLastMessagesForUser(channel, username, 5); //remove last X chats from history
     handlePart(channel, username, data); //Remove user from stream when banned
 }
 
 function handleClearMessage(channel, payload, data) {
     let username = data.login;
     console.log(`%c[CLEARCHAT] ${username}'s message "${payload}" was cleared on ${channel}'s channel`, 'color: #ff0000');
-    //TODO remove message from chat history
+    removeMessageForUser(channel, username, payload); //remove message from chat history
 }
 
 function loadNamesList(code, namesListData) {
@@ -495,4 +500,46 @@ function sendMessage(channel, message) {
 
 function sendMessageToUser(channel, username, message) {
     sendMessage(channel, `@${username} ${message}`);
+}
+
+const messageStorageLimit = 100;
+
+function saveMessageFromUser(channel, username, message, badges, data) {
+    if (!messages[channel][username]) {
+        messages[channel][username] = [];
+    }
+
+    messages[channel][username].push({ badges: badges, timeStamp: data.timeStamp, message: message });
+    //console.log("Saved message for " + username + ": " + message);
+    while (messages[channel][username].length > messageStorageLimit) {
+        messages[channel][username].shift();
+    }
+}
+
+function removeMessageForUser(channel, username, message) {
+    if (messages[channel][username]) {
+        for (let i = 0; i < messages[channel][username].length; i++) {
+            if (messages[channel][username][i].message === message) {
+                messages[channel][username].splice(i, 1);
+                return;
+            }
+        }
+        //Only get here if we didn't find the message
+        console.log(`Could not find "${message}" for ${username} in ${channel}'s channel to remove.`);
+    } else {
+        console.log("No messages to remove from for " + username + " in " + channel + "'s channel");
+    }
+}
+
+function removeLastMessagesForUser(channel, username, messageCount) {
+    if (messages[channel][username]) {
+        for (let i = 0; i < messageCount; i++) {
+            if (messages[channel][username].length <= 0) {
+                return;
+            }
+            messages[channel][username].pop();
+        }
+    } else {
+        console.log("No messages to remove from for " + username + " is " + channel + "'s channel");
+    }
 }
