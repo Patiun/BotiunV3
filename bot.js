@@ -420,11 +420,34 @@ function handleUserNotice(channel, payload, data) {
                 console.log('Message: ' + payload);
             }
             break;
+        case 'rewardgift':
+            console.log(`\n[?] ${data['msg-param-recipient-display-name']} triggered reward gift from ${username} to #${channel}! (${data.timeStamp})`);
+            if (payload) {
+                console.log('Message: ' + payload);
+            }
+            console.log(data);
+            break;
         case 'ritual':
             console.log(`\nA ritual (${data['msg-param-ritual-name']}) for ${username} has occured in #${channel} (${data.timeStamp})`);
             if (payload) {
                 console.log('Message: ' + payload);
             }
+            console.log(data);
+            break;
+        case 'raid':
+            username = data['msg-param-displayName'];
+            viewerCount = data['msg-param-viewerCount'];
+            console.log(`\n${username} is raiding #${channel} with ${viewerCount} viewers! (${data.timeStamp})`);
+            console.log(data);
+            break;
+        case 'unraid':
+            username = data['msg-param-displayName'];
+            console.log(`\n${username} is no longer raiding #${channel} (${data.timeStamp})`);
+            console.log(data);
+            break;
+        case 'bitsbadgetier':
+            let badgeTier = data['msg-param-threshold'];
+            console.log(`\n${username} unlocked the bits badge: ${badgeTier} (${data.timeStamp})`);
             console.log(data);
             break;
         default:
