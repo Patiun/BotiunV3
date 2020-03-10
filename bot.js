@@ -215,7 +215,7 @@ async function processIncomingData(data) {
                     //Ignore this
                     break;
                 default:
-                    console.log("[!!!] Unknown Event: " + event);
+                    console.log("\n[!!!] Unknown Event: " + event);
                     console.log(eventData);
                     break;
             }
@@ -369,8 +369,8 @@ function handleMessage(channel, username, payload, data) {
         }
     }
 
-    console.log("%c[MESSAGE] #" + channel + ' @ ' + data.timeStamp, 'color: #bada55');
-    console.log("%c" + username + badgeOutput + ': ' + payload + "\n", 'color: #bada55');
+    console.log("%c\n[MESSAGE] #" + channel + ' @ ' + data.timeStamp, 'color: #bada55');
+    console.log("%c" + username + badgeOutput + ': ' + payload, 'color: #bada55');
     saveMessageFromUser(channel, username, payload, badgeData, data);
     if (!seenUsers[channel].includes(username)) {
         //console.log(username + " chatted before we saw them in #" + channel);
@@ -386,26 +386,26 @@ function handleUserNotice(channel, data) {
     //msg-param-sub-plan-name:"Channel\sSubscription\s(invader_vie)"
     switch (msgId) {
         case 'sub':
-            console.log(`${username} subbed to ${channel}! (${data.timeStamp})`);
+            console.log(`\n${username} subbed to ${channel}! (${data.timeStamp})`);
             break;
         case 'resub':
-            console.log(`${username} resubbed to ${channel} for ${data['msg-param-cumulative-months']} months! (${data.timeStamp})`);
+            console.log(`\n${username} resubbed to ${channel} for ${data['msg-param-cumulative-months']} months! (${data.timeStamp})`);
             break;
         case 'giftpaidupgrade':
-            console.log(`${username} is continuing a gifted sub to ${channel}! (${data.timeStamp})`);
+            console.log(`\n${username} is continuing a gifted sub to ${channel}! (${data.timeStamp})`);
             break;
         case 'submysterygift':
-            console.log(`${username} is gifting ${data['msg-param-mass-gift-count']} sub(s) to #${channel}! (${data.timeStamp})`);
+            console.log(`\n${username} is gifting ${data['msg-param-mass-gift-count']} sub(s) to #${channel}! (${data.timeStamp})`);
             break;
         case 'subgift':
-            console.log(`${data['msg-param-recipient-display-name']} received a gifted sub to from ${username} to #${channel}! (${data.timeStamp})`);
+            console.log(`\n${data['msg-param-recipient-display-name']} received a gifted sub to from ${username} to #${channel}! (${data.timeStamp})`);
             break;
         case 'ritual':
-            console.log(`A ritual (${data['msg-param-ritual-name']}) for ${username} has occured in #${channel} (${data.timeStamp})`);
+            console.log(`\nA ritual (${data['msg-param-ritual-name']}) for ${username} has occured in #${channel} (${data.timeStamp})`);
             console.log(data);
             break;
         default:
-            console.log('Unknown Notice event: ' + msgId);
+            console.log('\nUnknown Notice event: ' + msgId);
             console.log(data);
             break;
     }
@@ -416,22 +416,22 @@ function handleNotice(channel, payload, data) {
     let noticeType = data['msg-id'];
     switch (noticeType) {
         case 'host_on':
-            console.log(`${channel} ${payload}`);
+            console.log(`\n${channel} ${payload}`);
             break;
         default:
-            console.log("Unnown notice type: " + noticeType);
+            console.log("\nUnnown notice type: " + noticeType);
             console.log(channel, payload, data);
             break;
     }
 }
 
 function handleHostTarget(channel, payload, data) {
-    console.log(`${channel} is targeting a host at ${payload}`);
+    console.log(`\n${channel} is targeting a host at ${payload}`);
     //console.log(data);
 }
 
 function handleRoomState(channel, data) {
-    console.log("Current roomstate of " + channel);
+    console.log("\nCurrent roomstate of " + channel);
     console.log(data);
     if (!roomstates[channel]) {
         roomstates[channel] = data;
@@ -460,7 +460,7 @@ function handleClearChat(channel, username, data) {
         duration = ' ' + duration;
         duration += ' seconds';
     }
-    console.log(`%c[CLEARCHAT] ${username} was banned on ${channel}'s channel for${duration}`, 'color: #ff0000');
+    console.log(`\n%c[CLEARCHAT] ${username} was banned on ${channel}'s channel for${duration}`, 'color: #ff0000');
     if (messages[channel][username]) {
         console.log("Last message: " + messages[channel][username][messages[channel][username].length - 1].message);
     }
@@ -471,7 +471,7 @@ function handleClearChat(channel, username, data) {
 
 function handleClearMessage(channel, payload, data) {
     let username = data.login;
-    console.log(`%c[CLEARCHAT] ${username}'s message "${payload}" was cleared on ${channel}'s channel`, 'color: #ff0000');
+    console.log(`\n%c[CLEARCHAT] ${username}'s message "${payload}" was cleared on ${channel}'s channel`, 'color: #ff0000');
     removeMessageForUser(channel, username, payload); //remove message from chat history
 }
 
@@ -492,7 +492,7 @@ function loadNamesList(code, namesListData) {
 }
 
 function sendMessage(channel, message) {
-    console.log("Trying to send message to " + channel + ": " + message);
+    console.log("\nTrying to send message to " + channel + ": " + message);
     if (channels.indexOf(channel) > -1) {
         irc.send(`PRIVMSG #${channel} :${message}`);
     }
