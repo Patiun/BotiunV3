@@ -24,6 +24,7 @@ const portWS = 80;
 
 //Target Channels
 let channels = [];
+//TODO Create an implement tracked active channels
 let roomstates = {};
 let botstates = {};
 let timers = {};
@@ -121,8 +122,19 @@ stdin.addListener("data", function(d) {
                     break;
                 } else {
                     console.log("Tryin to conenct to " + channel);
-                    registerChannel(channel);
                     connectToChannel(channel);
+                }
+            }
+            break;
+        case 'register':
+            if (inputParams.length > 1) {
+                let channel = inputParams[1].toLowerCase();
+                if (channels.includes(channel)) {
+                    console.log(channel + " was already registered to.");
+                    break;
+                } else {
+                    console.log("Tryin to register to " + channel);
+                    registerChannel(channel);
                 }
             }
             break;
@@ -377,6 +389,7 @@ function handleMessage(channel, username, payload, data) {
     //console.log("%c\n[MESSAGE] #" + channel + ' @ ' + data.timeStamp, 'color: #bada55');
     //console.log("%c" + username + badgeOutput + ': ' + payload, 'color: #bada55');
     saveMessageFromUser(channel, username, payload, badgeData, data);
+    //TODO kick off handle message processing here
     if (!seenUsers[channel].includes(username)) {
         //console.log(username + " chatted before we saw them in #" + channel);
         handleJoin(channel, username, data); //May be adding people who just left or will never register as leaving and may stay in the list forever
