@@ -461,7 +461,7 @@ function handleClearChat(channel, username, data) {
         duration += ' seconds';
     }
     console.log(`\n%c[CLEARCHAT] ${username} was banned on ${channel}'s channel for${duration}`, 'color: #ff0000');
-    if (messages[channel][username]) {
+    if (messages[channel][username].length > 0) {
         console.log("Last message: " + messages[channel][username][messages[channel][username].length - 1].message);
     }
     //console.log(data);
