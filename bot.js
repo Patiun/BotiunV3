@@ -13,7 +13,7 @@ const token = botConfig.token; //"oauth:2fsg30d1plxe20drjrb8s3lzwp91l6";
 const clientId = botConfig.clientId; //"95kreu7tyixtgfqd9oe575hjttox0j";
 
 //Badge Details
-//const trackedBadges = ['founder', 'broadcaster', 'bits', 'bits-leader', 'partner', 'moderator', 'vip', 'subscriber', 'premium', 'sub-gift-leader', 'sub-gifter', 'glhf-pledge', 'bits-charity', 'turbo'];
+//const trackedBadges = ['founder', 'broadcaster', 'staff', 'bits', 'bits-leader', 'partner', 'moderator', 'vip', 'subscriber', 'premium', 'sub-gift-leader', 'sub-gifter', 'glhf-pledge', 'bits-charity', 'turbo'];
 let unknownBadges = [];
 
 //Server Details
@@ -192,9 +192,11 @@ async function processIncomingData(data) {
                     break;
                 case "CLEARCHAT":
                     //console.log("%c[" + event + "] " + timeStamp, 'color: #ff0000');
+                    metadata.timeStamp = timeStamp;
                     handleClearChat(channel, payload, metadata);
                     break;
                 case "CLEARMSG":
+                    metadata.timeStamp = timeStamp;
                     handleClearMessage(channel, payload, metadata); //@login=poolfullofghoul;room-id=;target-msg-id=4b37e4f4-0534-4b65-ac3f-8f49c9e368ea;tmi-sent-ts=1583850112426 :tmi.twitch.tv CLEARMSG #invadervie :simping for my gf
                     break;
                 case "HOSTTARGET":
@@ -358,6 +360,9 @@ function handleMessage(channel, username, payload, data) {
                 case 'twitchcon':
                     badgeOutput += ' [TC]';
                     break;
+                case 'staff':
+                    bagesOutput += ' [Staff]';
+                    break;
                 default:
                     badgeOutput += ' [?' + badgeLineData[1] + ']';
                     if (!unknownBadges.includes(badgeLineData[0])) {
@@ -460,11 +465,11 @@ function handleClearChat(channel, username, data) {
         duration = ' ' + duration;
         duration += ' seconds';
     }
-    console.log(`\n%c[CLEARCHAT] ${username} was banned on ${channel}'s channel for${duration}`, 'color: #ff0000');
+    console.log(`\n%c[CLEARCHAT] ${username} was banned on ${channel}'s channel for${duration} @ ${data.timeStamp}`, 'color: #ff0000');
     if (messages[channel][username] && messages[channel][username].length > 0) {
         let count = (messages[channel][username].length < 5) ? messages[channel][username].length : 5;
-        for (let i = 0; i < count; i++) {
-            console.log("Last message: " + messages[channel][username][messages[channel][username].length - 1].message + " @ " + messages[channel][username][messages[channel][username].length - 1].timeStamp);
+        for (let i = 1; i < count + 1; i++) {
+            console.log("Last message: " + messages[channel][username][messages[channel][username].length - i].message + " @ " + messages[channel][username][messages[channel][username].length - 1].timeStamp);
         }
     }
     //console.log(data);
@@ -474,7 +479,7 @@ function handleClearChat(channel, username, data) {
 
 function handleClearMessage(channel, payload, data) {
     let username = data.login;
-    console.log(`\n%c[CLEARCHAT] ${username}'s message "${payload}" was cleared on ${channel}'s channel`, 'color: #ff0000');
+    console.log(`\n%c[CLEARCHAT] ${username}'s message "${payload}" was cleared on ${channel}'s channel @ ${data.timeStamp}`, 'color: #ff0000');
     removeMessageForUser(channel, username, payload); //remove message from chat history
 }
 
