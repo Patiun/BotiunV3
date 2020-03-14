@@ -37,6 +37,10 @@ let messages = {};
 
 //settings
 let verbose = false;
+let settings = {};
+let settingDefault = {
+    messages: false
+}
 
 const irc = new WebSocket(`${serverWS}:${portWS}`);
 
@@ -61,6 +65,7 @@ async function connectToChannel(channel) {
     users[channel] = [];
     seenUsers[channel] = [];
     messages[channel] = {};
+    settings[channel] = JSON.parse(JSON.stringify(settingDefault));
     timers[channel] = {
         connection: setTimeout(() => { alertFailureToConnect(channel); }, 2 * 1000)
     };
@@ -173,6 +178,20 @@ stdin.addListener("data", function(d) {
         case 'toggleverbose':
             verbose = !verbose;
             console.log("Verbose setting: "+verbose);
+            break;
+        case 'togglemessage':
+            if (inputParams.length > 1) {
+                let channel = inputParams[1].toLowerCase();
+                if (channels.includes(channel)) {
+                    settings[channel].message = !settings[channel].message;
+                    console.log(channel + " showing messages "+settings[channel].message);
+                    break;
+                } else {
+                    console.log("Channel "+channel+" does not exist");
+                }
+            } else {
+                console.log("No channel specified.");
+            }
             break;
         case 'close':
         case 'exit':
@@ -417,8 +436,10 @@ function handleMessage(channel, username, payload, data) {
         }
     }
 
-    console.log("%c\n[MESSAGE] #" + channel + ' @ ' + data.timeStamp, 'color: #bada55');
-    console.log("%c" + username + badgeOutput + ': ' + payload, 'color: #bada55');
+    if (settings[channel].message) {
+        console.log("%c\n[MESSAGE] #" + channel + ' @ ' + data.timeStamp, 'color: #bada55');
+        console.log("%c" + username + badgeOutput + ': ' + payload, 'color: #bada55');
+    }
     saveMessageFromUser(channel, username, payload, badgeData, data);
     //TODO kick off handle message processing here
     if (!seenUsers[channel].includes(username)) {
