@@ -110,6 +110,10 @@ async function initializeBot() {
     }
 }
 
+process.on('exit', () => {
+    console.log("Exiting "+botName);
+});
+
 //-------------------Console--------------------
 var stdin = process.openStdin();
 
@@ -160,6 +164,10 @@ stdin.addListener("data", function(d) {
                 let username = inputParams[1];
                 registerIgnoredUser(username);
             }
+            break;
+        case 'close':
+        case 'exit':
+            process.exit();
             break;
         default:
             break;
