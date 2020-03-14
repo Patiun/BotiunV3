@@ -180,11 +180,12 @@ stdin.addListener("data", function(d) {
             console.log("Verbose setting: "+verbose);
             break;
         case 'togglemessage':
+        case 'togglemessages':
             if (inputParams.length > 1) {
                 let channel = inputParams[1].toLowerCase();
                 if (channels.includes(channel)) {
                     settings[channel].message = !settings[channel].message;
-                    console.log(channel + " showing messages "+settings[channel].message);
+                    console.log(channel + " showing messages: "+settings[channel].message);
                     break;
                 } else {
                     console.log("Channel "+channel+" does not exist");
