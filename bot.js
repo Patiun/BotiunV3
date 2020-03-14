@@ -35,6 +35,9 @@ let users = {};
 let seenUsers = {};
 let messages = {};
 
+//settings
+let verbose = false;
+
 const irc = new WebSocket(`${serverWS}:${portWS}`);
 
 irc.on('message', function incoming(data) {
@@ -165,6 +168,12 @@ stdin.addListener("data", function(d) {
                 registerIgnoredUser(username);
             }
             break;
+        case 'verbose':
+        case 'setverbose':
+        case 'toggleverbose':
+            verbose = !verbose;
+            console.log("Verbose setting: "+verbose);
+            break;
         case 'close':
         case 'exit':
             process.exit();
@@ -201,11 +210,15 @@ async function processIncomingData(data) {
                     handleMessage(channel, username, payload, metadata);
                     break;
                 case "JOIN":
-                    //console.log("%c[" + event + "] " + username + " joined #" + channel + " at " + timeStamp, 'color: #00ff00');
+                    if (verbose) {
+                        console.log("%c[" + event + "] " + username + " joined #" + channel + " at " + timeStamp, 'color: #00ff00');
+                    }
                     handleJoin(channel, username, { timeStamp: timeStamp });
                     break;
                 case "PART":
-                    //console.log("%c[" + event + "] " + username + " parted #" + channel + " at " + timeStamp, 'color: #aa00aa');
+                    if (verbose) {
+                        console.log("%c[" + event + "] " + username + " parted #" + channel + " at " + timeStamp, 'color: #aa00aa');
+                    }
                     handlePart(channel, username, { timeStamp: timeStamp });
                     break;
                 case "USERSTATE":
