@@ -68,8 +68,18 @@ async function connectToChannel(channel) {
 }
 
 async function registerChannel(channel) {
-    channels.push(channel);
-    //Write channel name to channels files
+    if (channels.indexOf(channel) === -1) {
+        channels.push(channel);
+        connectToChannel(channel);
+        //Write channel name to channels files
+        try {
+            fs.appendFileSync(fileChannels,'\n'+channel);
+        }catch (error) {
+            console.error(error);
+        }
+    } else {
+        console.log(`${channel} is already regustered.`);
+    }
 }
 
 function registerIgnoredUser(username) {
