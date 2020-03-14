@@ -386,8 +386,8 @@ function handleMessage(channel, username, payload, data) {
         }
     }
 
-    //console.log("%c\n[MESSAGE] #" + channel + ' @ ' + data.timeStamp, 'color: #bada55');
-    //console.log("%c" + username + badgeOutput + ': ' + payload, 'color: #bada55');
+    console.log("%c\n[MESSAGE] #" + channel + ' @ ' + data.timeStamp, 'color: #bada55');
+    console.log("%c" + username + badgeOutput + ': ' + payload, 'color: #bada55');
     saveMessageFromUser(channel, username, payload, badgeData, data);
     //TODO kick off handle message processing here
     if (!seenUsers[channel].includes(username)) {
