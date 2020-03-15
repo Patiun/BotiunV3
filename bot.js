@@ -93,7 +93,7 @@ const server = http.createServer(app);
 const io = socketIo(server);
 
 server.listen(port, () => {
-    log(`Web Server listening at port ${port}`);
+    console.log(`Web Server listening at port ${port}`);
   });
   app.get('/', function(req, res) {
     res.sendFile({"data":"Patiun"});
