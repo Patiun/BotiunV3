@@ -1,26 +1,32 @@
+//#region modules
 const process = require('process');
 const WebSocket = require('ws');
 const fs = require('fs');
+//#endregion modules
 
-//File locations
+//#region File locations
 const botConfig = require('./botConfig.json');
 const fileChannels = botConfig.files.channels; //'./channels.data';
 const fileIgnoredUsers = botConfig.files.ignoredUsers; //'./ignoredUsers.data';
+//#endregion
 
-//Botiun Authentication Stuffs
+//#region Botiun Authentication Stuffs
 const botName = botConfig.botName; //"botName";
 const token = botConfig.token; //"oauth:2fsg30d1plxe20drjrb8s3lzwp91l6";
 const clientId = botConfig.clientId; //"95kreu7tyixtgfqd9oe575hjttox0j";
+//#endregion
 
-//Badge Details
-//const trackedBadges = ['founder', 'broadcaster', 'staff', 'bits', 'bits-leader', 'partner', 'moderator', 'vip', 'subscriber', 'premium', 'sub-gift-leader', 'sub-gifter', 'glhf-pledge', 'bits-charity', 'turbo'];
-let unknownBadges = [];
-
-//Server Details
+//#region Server Details
 const serverIRC = "irc://irc.chat.twitch.tv";
 const portIRC = 6667;
 const serverWS = "ws://irc-ws.chat.twitch.tv";
 const portWS = 80;
+//#endregion
+
+//#region globals
+//Badge Details
+//const trackedBadges = ['founder', 'broadcaster', 'staff', 'bits', 'bits-leader', 'partner', 'moderator', 'vip', 'subscriber', 'premium', 'sub-gift-leader', 'sub-gifter', 'glhf-pledge', 'bits-charity', 'turbo'];
+let unknownBadges = [];
 
 //Target Channels
 let channels = [];
@@ -30,6 +36,7 @@ let botstates = {};
 let timers = {};
 
 //current users
+let superUsers = botConfig.superUsers;
 let ignoredUsers = [];
 let users = {};
 let seenUsers = {};
@@ -41,7 +48,11 @@ let settings = {};
 let settingDefault = {
     messages: false
 }
+const messageStorageLimit = 100;
+//#endregion 
 
+//--------------------------------------------------------------------------------------------
+//#region IRC
 const irc = new WebSocket(`${serverWS}:${portWS}`);
 
 irc.on('message', function incoming(data) {
@@ -75,6 +86,14 @@ async function connectToChannel(channel) {
     return;
 }
 
+function alertFailureToConnect(channel) {
+    console.log("Failed to connect to " + channel);
+    let channelIndex = channels.indexOf(channel);
+    channels.splice(channelIndex, 1);
+}
+//#endregion
+
+//#region Registration
 async function registerChannel(channel) {
     if (channels.indexOf(channel) === -1) {
         channels.push(channel);
@@ -91,10 +110,21 @@ async function registerChannel(channel) {
 }
 
 function registerIgnoredUser(username) {
-    ignoredUsers.push(username);
-    //Write username to ignored user files
+    if (ignoredUsers.indexOf(username) === -1) {
+        ignoredUsers.push(username);
+        //Write username to ignored user files
+        try {
+            fs.appendFileSync(fileIgnoredUsers,'\n'+username);
+        }catch (error) {
+            console.error(error);
+        }
+    } else {
+        console.log(`${username} is already a registered ignored user.`);
+    }
 }
+//#endregion
 
+//#region Startup
 async function initializeBot() {
     try {
         //Load ignored users
@@ -121,8 +151,9 @@ async function initializeBot() {
 process.on('exit', () => {
     console.log("Exiting "+botName);
 });
+//#endregion
 
-//-------------------Console--------------------
+//#region Console
 var stdin = process.openStdin();
 
 stdin.addListener("data", function(d) {
@@ -202,14 +233,9 @@ stdin.addListener("data", function(d) {
             break;
     }
 });
-//-------------------End Console--------------------
+//#endregion
 
-function alertFailureToConnect(channel) {
-    console.log("Failed to connect to " + channel);
-    let channelIndex = channels.indexOf(channel);
-    channels.splice(channelIndex, 1);
-}
-
+//#region Handle IRC
 async function processIncomingData(data) {
     let pingCheck = data.substring(0, 4);
     if (pingCheck === "PING") {
@@ -608,7 +634,9 @@ function loadNamesList(code, namesListData) {
         }
     }
 }
+//#endregion
 
+//#region Send Messages
 function sendMessage(channel, message) {
     console.log("\nTrying to send message to " + channel + ": " + message);
     if (channels.indexOf(channel) > -1) {
@@ -619,9 +647,9 @@ function sendMessage(channel, message) {
 function sendMessageToUser(channel, username, message) {
     sendMessage(channel, `@${username} ${message}`);
 }
+//#endregion
 
-const messageStorageLimit = 100;
-
+//#region Message Storage
 function saveMessageFromUser(channel, username, message, badges, data) {
     if (!messages[channel][username]) {
         messages[channel][username] = [];
@@ -667,3 +695,4 @@ function removeAllMessagesForUser(channel, username) {
         delete messages[channel][username];
     }
 }
+//#endregion
