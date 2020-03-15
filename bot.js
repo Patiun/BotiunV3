@@ -2,6 +2,9 @@
 const process = require('process');
 const WebSocket = require('ws');
 const fs = require('fs');
+const express = require('express');
+const http = require('http');
+const socketIo = require("socket.io");
 //#endregion modules
 
 //#region File locations
@@ -81,6 +84,33 @@ async function initializeBot() {
 process.on('exit', () => {
     console.log("Exiting "+botName);
 });
+//#endregion
+
+//#region Web Server
+const port = process.env.PORT || 8080;
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
+
+server.listen(port, () => {
+    log(`Web Server listening at port ${port}`);
+  });
+  app.get('/', function(req, res) {
+    res.sendFile({"data":"Patiun"});
+  });
+  //app.use(express.static('Sounds'));
+  //app.use(express.static('Public_Html'));
+  
+  io.on('connection', (socket) => {
+    //// when the client emits 'donate', this listens and executes
+    //socket.on('donate', (msg) => {
+    //  socket.broadcast.emit('donate', 'Receive donate');
+    //});
+    socket.on('disconnect', (details) => {
+        console.log('user disconnected');
+      console.log(details);
+    });
+  });
 //#endregion
 
 //#region IRC
