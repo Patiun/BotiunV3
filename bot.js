@@ -215,12 +215,12 @@ stdin.addListener("data", function(d) {
         case 'togglemessages':
             if (inputParams.length > 1) {
                 let channel = inputParams[1].toLowerCase();
-                if (channels.includes(channel)) {
+                if (settings[channel]) {
                     settings[channel].message = !settings[channel].message;
                     console.log(channel + " showing messages: "+settings[channel].message);
                     break;
                 } else {
-                    console.log("Channel "+channel+" does not exist");
+                    console.log("Channel "+channel+" is not connected");
                 }
             } else {
                 console.log("No channel specified.");
