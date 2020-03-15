@@ -87,7 +87,7 @@ process.on('exit', () => {
 //#endregion
 
 //#region Web Server
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 4001;
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
@@ -96,7 +96,7 @@ server.listen(port, () => {
     console.log(`Web Server listening at port ${port}`);
   });
   app.get('/', function(req, res) {
-    res.sendFile({"data":"Patiun"});
+    res.send({"data":"Patiun"});
   });
   //app.use(express.static('Sounds'));
   //app.use(express.static('Public_Html'));
