@@ -51,7 +51,38 @@ let settingDefault = {
 const messageStorageLimit = 100;
 //#endregion 
 
-//--------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------
+// ~~~~~~~~~~~~~~~~~VVVVVVVVVVVVVVVVVV Scripted VVVVVVVVVVVVVVVVVV~~~~~~~~~~~~~~~~~
+//---------------------------------------------------------------------------------
+//#region Startup
+async function initializeBot() {
+    try {
+        //Load ignored users
+        let ignoredUserData = fs.readFileSync(fileIgnoredUsers, 'utf8');
+        ignoredUsers = ignoredUserData.split('\n').map(x => {
+            return x.trim().toLowerCase();
+        });
+
+        //Load channels
+        let channelsData = fs.readFileSync(fileChannels, 'utf8');
+        channels = channelsData.split('\n').map(x => {
+            return x.trim().toLowerCase();
+        });
+
+        console.log(`${botName} is online!`);
+        return;
+    } catch (error) {
+        console.log("Error intializing Bot");
+        console.log(error);
+        return;
+    }
+}
+
+process.on('exit', () => {
+    console.log("Exiting "+botName);
+});
+//#endregion
+
 //#region IRC
 const irc = new WebSocket(`${serverWS}:${portWS}`);
 
@@ -91,66 +122,6 @@ function alertFailureToConnect(channel) {
     let channelIndex = channels.indexOf(channel);
     channels.splice(channelIndex, 1);
 }
-//#endregion
-
-//#region Registration
-async function registerChannel(channel) {
-    if (channels.indexOf(channel) === -1) {
-        channels.push(channel);
-        connectToChannel(channel);
-        //Write channel name to channels files
-        try {
-            fs.appendFileSync(fileChannels,'\n'+channel);
-        }catch (error) {
-            console.error(error);
-        }
-    } else {
-        console.log(`${channel} is already regustered.`);
-    }
-}
-
-function registerIgnoredUser(username) {
-    if (ignoredUsers.indexOf(username) === -1) {
-        ignoredUsers.push(username);
-        //Write username to ignored user files
-        try {
-            fs.appendFileSync(fileIgnoredUsers,'\n'+username);
-        }catch (error) {
-            console.error(error);
-        }
-    } else {
-        console.log(`${username} is already a registered ignored user.`);
-    }
-}
-//#endregion
-
-//#region Startup
-async function initializeBot() {
-    try {
-        //Load ignored users
-        let ignoredUserData = fs.readFileSync(fileIgnoredUsers, 'utf8');
-        ignoredUsers = ignoredUserData.split('\n').map(x => {
-            return x.trim().toLowerCase();
-        });
-
-        //Load channels
-        let channelsData = fs.readFileSync(fileChannels, 'utf8');
-        channels = channelsData.split('\n').map(x => {
-            return x.trim().toLowerCase();
-        });
-
-        console.log(`${botName} is online!`);
-        return;
-    } catch (error) {
-        console.log("Error intializing Bot");
-        console.log(error);
-        return;
-    }
-}
-
-process.on('exit', () => {
-    console.log("Exiting "+botName);
-});
 //#endregion
 
 //#region Console
@@ -233,6 +204,39 @@ stdin.addListener("data", function(d) {
             break;
     }
 });
+//#endregion
+//----------------------------------------------------------------------------------
+// ~~~~~~~~~~~~~~~~~VVVVVVVVVVVVVVVVVV Functions VVVVVVVVVVVVVVVVVV~~~~~~~~~~~~~~~~~
+//----------------------------------------------------------------------------------
+//#region Registration
+async function registerChannel(channel) {
+    if (channels.indexOf(channel) === -1) {
+        channels.push(channel);
+        connectToChannel(channel);
+        //Write channel name to channels files
+        try {
+            fs.appendFileSync(fileChannels,'\n'+channel);
+        }catch (error) {
+            console.error(error);
+        }
+    } else {
+        console.log(`${channel} is already regustered.`);
+    }
+}
+
+function registerIgnoredUser(username) {
+    if (ignoredUsers.indexOf(username) === -1) {
+        ignoredUsers.push(username);
+        //Write username to ignored user files
+        try {
+            fs.appendFileSync(fileIgnoredUsers,'\n'+username);
+        }catch (error) {
+            console.error(error);
+        }
+    } else {
+        console.log(`${username} is already a registered ignored user.`);
+    }
+}
 //#endregion
 
 //#region Handle IRC
