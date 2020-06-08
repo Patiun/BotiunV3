@@ -9,14 +9,14 @@ const socketIo = require("socket.io");
 
 //#region File locations
 const botConfig = require('./botConfig.json');
-const fileChannels = botConfig.files.channels; //'./channels.data';
-const fileIgnoredUsers = botConfig.files.ignoredUsers; //'./ignoredUsers.data';
+const fileChannels = botConfig.files.channels;
+const fileIgnoredUsers = botConfig.files.ignoredUsers;
 //#endregion
 
 //#region Botiun Authentication Stuffs
-const botName = botConfig.botName; //"botName";
-const token = botConfig.token; //"oauth:2fsg30d1plxe20drjrb8s3lzwp91l6";
-const clientId = botConfig.clientId; //"95kreu7tyixtgfqd9oe575hjttox0j";
+const botName = botConfig.botName;
+const token = botConfig.token; 
+const clientId = botConfig.clientId;
 //#endregion
 
 //#region Server Details
@@ -46,10 +46,10 @@ let seenUsers = {};
 let messages = {};
 
 //settings
-let verbose = false;
+let verbose = true;
 let settings = {};
 let settingDefault = {
-    messages: false
+    messages: true
 }
 const messageStorageLimit = 100;
 //#endregion 
@@ -497,14 +497,15 @@ function handleMessage(channel, username, payload, data) {
         }
     }
 
-    if (settings[channel].message) {
+    if (settings[channel].messages) {
         console.log("%c\n[MESSAGE] #" + channel + ' @ ' + data.timeStamp, 'color: #bada55');
         console.log("%c" + username + badgeOutput + ': ' + payload, 'color: #bada55');
     }
+    
     saveMessageFromUser(channel, username, payload, badgeData, data);
     //TODO kick off handle message processing here
     if (!seenUsers[channel].includes(username)) {
-        //console.log(username + " chatted before we saw them in #" + channel);
+        console.log(username + " chatted before we saw them in #" + channel);
         handleJoin(channel, username, data); //May be adding people who just left or will never register as leaving and may stay in the list forever
     }
 }
