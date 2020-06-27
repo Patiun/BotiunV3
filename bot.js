@@ -5,10 +5,12 @@ const fs = require("fs");
 const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
+var mysql = require('mysql');
 //#endregion modules
 
 //#region File locations
 const botConfig = require("./botConfig.json");
+const { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } = require("constants");
 const fileChannels = botConfig.files.channels;
 const fileIgnoredUsers = botConfig.files.ignoredUsers;
 //#endregion
@@ -24,6 +26,12 @@ const serverIRC = "irc://irc.chat.twitch.tv";
 const portIRC = 6667;
 const serverWS = "ws://irc-ws.chat.twitch.tv";
 const portWS = 80;
+//#endregion
+
+//#region Database Connection
+var connection = mysql.createConnection(botConfig.db);
+connection.connect();
+//TODO end connection on close and exit
 //#endregion
 
 //#region globals
@@ -166,6 +174,17 @@ async function connectToChannel(channel) {
   };
   counters[channel] = JSON.parse(JSON.stringify(countersDefault));
   controlBools[channel] = JSON.parse(JSON.stringify(controlBoolsDefault));
+
+
+  await query(`SELECT * FROM channel WHERE twitchId = '${channel}';`).then(results => {
+    if (results.length <= 0) {
+      query(`INSERT INTO channel (twitchId) VALUES('${channel}');`).then(results => {
+        console.log("Connected to " + channel + " for first time");
+      }).catch(error => { throw error; });
+    }
+  }).catch(error => {
+    throw error;
+  });
 
   irc.send(`JOIN #${channel.toLowerCase()}`);
 
@@ -322,13 +341,13 @@ async function processIncomingData(data) {
           if (verbose) {
             console.log(
               "%c[" +
-                event +
-                "] " +
-                username +
-                " joined #" +
-                channel +
-                " at " +
-                timeStamp,
+              event +
+              "] " +
+              username +
+              " joined #" +
+              channel +
+              " at " +
+              timeStamp,
               "color: #00ff00"
             );
           }
@@ -338,13 +357,13 @@ async function processIncomingData(data) {
           if (verbose) {
             console.log(
               "%c[" +
-                event +
-                "] " +
-                username +
-                " parted #" +
-                channel +
-                " at " +
-                timeStamp,
+              event +
+              "] " +
+              username +
+              " parted #" +
+              channel +
+              " at " +
+              timeStamp,
               "color: #aa00aa"
             );
           }
@@ -452,23 +471,41 @@ function parseEventData(data) {
   };
 }
 
-function handleJoin(channel, username, data) {
+async function handleJoin(channel, username, data) {
   let indexOfUsername = users[channel].indexOf(username);
   if (indexOfUsername === -1) {
     //First join
     users[channel].push(username);
     seenUsers[channel].push(username);
   }
+  addUserToDB(username, channel, (channel === username) ? 1 : 0).then(result => { }).catch(error => { console.log(error); });
+  try {
+    query(`SELECT * FROM user WHERE twitchId = '${username}' AND channel = '${channel}'`).then(result => {
+      if (result.length <= 0) {
+        return;
+      }
+      let userData = result[0];
+      if (userData.vip) {
+        playSoundToOverlay(channel, 'Entrance-Fanfair-Shrek.mp3');
+      }
+      if (userData.mod) {
+        //TODO Imperial March
+      }
+    }).catch(error => { console.log(error) });
+  } catch (error) {
+    console.log(error);
+  }
 }
 
-function handlePart(channel, username, data) {
+async function handlePart(channel, username, data) {
   let indexOfUsername = users[channel].indexOf(username);
   if (indexOfUsername != -1) {
     users[channel].splice(indexOfUsername, 1);
   }
+  addUserToDB(username, channel, (channel === username) ? 1 : 0);
 }
 
-function handleMessage(channel, username, payload, data) {
+async function handleMessage(channel, username, payload, data) {
   //get badges from data
   let rawBadgeString = data.badges;
   let badgeData = {};
@@ -559,13 +596,16 @@ function handleMessage(channel, username, payload, data) {
     );
   }
 
-  saveMessageFromUser(channel, username, payload, badgeData, data);
-  processMessage(channel, username, payload, badgeData, data);
-  //TODO kick off handle message processing here
   if (!seenUsers[channel].includes(username)) {
     console.log(username + " chatted before we saw them in #" + channel);
-    handleJoin(channel, username, data); //May be adding people who just left or will never register as leaving and may stay in the list forever
+    await handleJoin(channel, username, data); //May be adding people who just left or will never register as leaving and may stay in the list forever
+    saveMessageFromUser(channel, username, payload, badgeData, data);
+    processMessage(channel, username, payload, badgeData, data);
+  } else {
+    saveMessageFromUser(channel, username, payload, badgeData, data);
+    processMessage(channel, username, payload, badgeData, data);
   }
+  //TODO kick off handle message processing here
 }
 
 function handleUserNotice(channel, payload, data) {
@@ -722,14 +762,14 @@ function handleClearChat(channel, username, data) {
     for (let i = 1; i < count + 1; i++) {
       console.log(
         "Last message: " +
-          messages[channel][username][messages[channel][username].length - i]
-            .message +
-          " @ " +
-          new Date(
-            messages[channel][username][
-              messages[channel][username].length - i
-            ].timeStamp
-          ).toLocaleString()
+        messages[channel][username][messages[channel][username].length - i]
+          .message +
+        " @ " +
+        new Date(
+          messages[channel][username][
+            messages[channel][username].length - i
+          ].timeStamp
+        ).toLocaleString()
       );
     }
   }
@@ -782,22 +822,44 @@ function sendMessageToUser(channel, username, message) {
 //#endregion
 
 //#region Message Storage
-function saveMessageFromUser(channel, username, message, badges, data) {
-  /*Commented Out for Memory Purposes
-  if (!messages[channel][username]) {
-    messages[channel][username] = [];
+async function saveMessageFromUser(channel, username, message, badges, data) {
+  if (ignoredUsers.includes(username) || ['streamelements'].includes(username) || message.length <= 0) {
+    return;
   }
 
-  messages[channel][username].push({
-    badges: badges,
-    timeStamp: data.timeStamp,
-    message: message,
-  });
-  //console.log("Saved message for " + username + ": " + message);
-  while (messages[channel][username].length > messageStorageLimit) {
-    messages[channel][username].shift();
-  }
-  */
+  let now = new Date();
+  let lastSeen = now.getTime();
+
+  let broadcaster = (badges.hasOwnProperty('broadcaster')) ? 1 : 0;
+  let vip = (badges.hasOwnProperty('vip')) ? 1 : 0;
+  let mod = (badges.hasOwnProperty('moderator')) ? 1 : 0;
+  let sub1 = (badges.subscriber || badges.hasOwnProperty('founder')) ? 1 : 0;
+  let sub2 = ((badges.subscriber) && (badges.subscriber >= 2000)) ? 1 : 0;
+  let sub3 = ((badges.subscriber) && (badges.subscriber >= 3000)) ? 1 : 0;
+  let command = (message.charAt(0) === '!') ? 1 : 0;
+
+  message = message.replace(/"/g, '\\"');
+
+  //UPDATE USER
+  query(`
+  UPDATE user
+  SET broadcaster = ${broadcaster}, vip = ${vip}, \`mod\` = ${mod}, sub1 = ${sub1}, sub2 = ${sub2}, sub3 = ${sub3}, command = ${command}, lastSeen = ${lastSeen}
+  WHERE twitchId = '${username}' AND channel = '${channel}';
+  `)
+    .then(result => {
+
+    })
+    .catch(error => { console.log(error) });
+
+  //SAVE MESSAGE CONTENTS
+  await query(`
+  INSERT INTO messages (twitchId, channel, badgeDetails, message, timeStamp)
+  VALUE ('${username}','${channel}','${JSON.stringify(badges)}',"${message}",${data.timeStamp});
+  `)
+    .then(result => {
+
+    })
+    .catch(error => { console.log(error) });
 }
 
 function removeMessageForUser(channel, username, message) {
@@ -815,10 +877,10 @@ function removeMessageForUser(channel, username, message) {
   } else {
     console.log(
       "No messages to remove from for " +
-        username +
-        " in " +
-        channel +
-        "'s channel"
+      username +
+      " in " +
+      channel +
+      "'s channel"
     );
   }
 }
@@ -834,10 +896,10 @@ function removeLastMessagesForUser(channel, username, messageCount) {
   } else {
     console.log(
       "No messages to remove from for " +
-        username +
-        " is " +
-        channel +
-        "'s channel"
+      username +
+      " is " +
+      channel +
+      "'s channel"
     );
   }
 }
@@ -907,5 +969,78 @@ function processMessage(channel, username, payload, badgeData, data) {
       io.sockets.emit("orcDance01");
     }
   }
+}
+//#endregion
+
+//#region DB
+function query(queryStr) {
+  return new Promise((resolve, reject) => {
+    if (!connection) {
+      reject("No DB connected");
+    } else {
+      connection.query(queryStr, (error, results, fields) => {
+        if (error) reject(error);
+        resolve(results);
+      });
+    }
+  });
+}
+
+function addUserToDB(username, channel, broadcaster, vip, mod, sub1, sub2, sub3) {
+  return new Promise((resolve, reject) => {
+    let now = new Date();
+    let lastSeen = now.getTime();
+
+    let br = (broadcaster) ? 1 : 0;
+    let v = (vip) ? 1 : 0;
+    let m = (mod) ? 1 : 0;
+    let s1 = (sub1) ? 1 : 0;
+    let s2 = (sub2) ? 1 : 0;
+    let s3 = (sub3) ? 1 : 0; 6
+
+    query(`SELECT * FROM user WHERE twitchId = '${username}' AND channel = '${channel}'`).then(async result => {
+      if (result.length <= 0) {
+        //await query(`INSERT INTO user(twitchId,channel,broadcaster,vip,mod,sub1,sub2,sub3,lastSeen) VALUE('${username}','${channel}',${br},${v},${m},${s1},${s2},${s3},${lastSeen});`)
+        await query(`
+INSERT INTO \`botiun\`.\`user\`
+(\`twitchId\`,
+\`channel\`,
+\`broadcaster\`,
+\`vip\`,
+\`mod\`,
+\`sub1\`,
+\`sub2\`,
+\`sub3\`,
+\`lastSeen\`)
+VALUES
+('${username}',
+  '${channel}',
+  ${br},
+  ${v},
+  ${m},
+  ${s1},
+  ${s2},
+  ${s3},
+  ${lastSeen});`)
+          .then((result) => {
+            resolve(result);
+          })
+          .catch((error) => {
+            reject(error);
+          });
+      } else {
+        await query(`UPDATE \`botiun\`.\`user\` SET lastSeen = ${lastSeen} WHERE twitchId = '${username}' AND channel = '${channel}'`)
+          .then((result) => {
+            resolve(result);
+          })
+          .catch((error) => {
+            reject(error);
+          });
+      }
+    }).catch(error => {
+      console.log(error);
+      reject(error);
+    });
+  });
 }
 //#endregion

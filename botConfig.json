@@ -6,5 +6,11 @@
     "files": {
         "channels": "./channels.data",
         "ignoredUsers": "./ignoredUsers.data"
+    },
+    "db": {
+        "host":"35.223.208.238",
+        "user":"root",
+        "password":"77ltEBOlaf2O8pzC",
+        "database":"botiun"
     }
 }
