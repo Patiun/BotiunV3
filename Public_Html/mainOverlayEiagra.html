@@ -18,7 +18,7 @@
       var embedSource = '<embed hidden="true" autostart="true" loop="false" src="' + filename + '.mp3">';
       document.getElementById("sound").innerHTML = '<audio autoplay="autoplay">' + mp3Source + oggSource + embedSource + '</audio>';
     }*/
-      const CHANNEL = "patiun";
+      const CHANNEL = "orcishfiddler";
 
       function speakMessage(text) {
         var msg = new SpeechSynthesisUtterance(text);
@@ -142,7 +142,7 @@
     </div>
 
     <div id="container">
-      <div class="display"></div>
+      <div class="display" style="display: none;"></div>
     </div>
     <div
       id="race-container"

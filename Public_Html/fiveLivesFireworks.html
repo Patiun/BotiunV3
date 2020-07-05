@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Botiun Fireworks</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        //Option 1
+        /**
+         * Plays a sound using the HTML5 audio tag. Provide mp3 and ogg files for best browser support.
+         * @param {string} filename The name of the file. Omit the ending!
+         */
+        /*
+      function playSound(filename) {
+        console.log("Trying to play sound1");
+        var mp3Source = '<source src="' + filename + '.mp3" type="audio/mpeg">';
+        var oggSource = '<source src="' + filename + '.ogg" type="audio/ogg">';
+        var embedSource = '<embed hidden="true" autostart="true" loop="false" src="' + filename + '.mp3">';
+        document.getElementById("sound").innerHTML = '<audio autoplay="autoplay">' + mp3Source + oggSource + embedSource + '</audio>';
+      }*/
+        const CHANNEL = "five_lives";
+
+        //Option 2
+        function playSound(audioFileName) {
+            console.log("Trying to play sound " + audioFileName);
+            let audio = new Audio(audioFileName);
+            audio.play();
+        }
+
+        //ORC Play
+        function playOrc() {
+            document.getElementById("orcDiv1").style.visibility = "visible";
+            document.getElementById("orcDiv2").style.visibility = "visible";
+            document.getElementById("OrcDance01_1").play();
+            document.getElementById("OrcDance01_2").play();
+            let audioFileName = "SexyOrcDance01.mp3";
+            let audio = new Audio(audioFileName);
+            audio.volume = 0.4;
+            audio.play();
+        }
+
+        let fireworkCount = 0;
+        let fireworkNameList = ['fw_white.gif','fw_blue.gif','fw_green.gif','fw_orange.gif','fw_pink.gif','fw_purple.gif','fw_red.gif'];
+
+        function playFirework(fireworkName) {
+            // vary size for fun
+            var divsize = ((Math.random() * 550) + 500).toFixed();
+            //var color = '#' + Math.round(0xffffff * Math.random()).toString(16);
+            $newFirework = $('<img id=firework_'+fireworkCount+'/>').css({
+                'width': divsize + 'px'
+                //'height': divsize + 'px',
+                //'background-color': color
+            });
+            fireworkCount += 1;
+            if (!fireworkName) {
+            fireworkName = fireworkNameList[Math.floor(Math.random()*fireworkNameList.length)];
+            }
+            $newFirework.attr('src','./fireworks/'+fireworkName+'?'+Math.random());
+
+            // make position sensitive to size and document's width
+            var posx = (Math.random() * ($(document).width() - divsize)).toFixed();
+            var posy = (Math.random() * ($(document).height() - divsize)).toFixed();
+
+            $newFirework.css({
+                'position': 'absolute',
+                'left': posx + 'px',
+                'bottom': '0px',//posy + 'px',
+                'display': 'none'
+            }).appendTo('body').fadeIn(100,function() {
+                playSound('Firework-Pop.mp3');
+            }).fadeOut(4000, function () {
+                $(this).remove();
+            });
+        }
+
+        $(function () {
+            var socket = io();
+            //Play Sound
+            socket.on("playFirework", function (data) {
+                console.log("Recieved play");
+                let channel = data.channel;
+                if (channel === CHANNEL) {
+                    let fireworkName = data.fireworkName;
+                    if (fireworkName) {
+                        playFirework(fireworkName);
+                    } else {
+                        playFirework();
+                    }
+                }
+            });
+
+            /*
+        //ORC Socket
+        socket.on("orcDance01", function (data) {
+          let channel = data.channel;
+          if (channel === CHANNEL) {
+            let soundFileName = data.soundFileName;
+            playOrc();
+          }
+        });
+
+        document
+          .getElementById("OrcDance01_1")
+          .addEventListener("ended", myHandler, false);
+        function myHandler(e) {
+          setTimeout(() => {
+            document.getElementById("orcDiv1").style.visibility = "hidden";
+            document.getElementById("orcDiv2").style.visibility = "hidden";
+            console.log("Done Orc Dance");
+          }, 1000);
+        }*/
+        });
+    </script>
+</head>
+
+<body>
+    <div id="container">
+    </div>
+    <div id="sound"></div>
+</body>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font: 13px Helvetica, Arial;
+    }
+
+    .js .display {
+        display: none;
+    }
+
+    /* Styling some css for better view in OBS */
+    /* Outline text */
+    .strokeme {
+        color: white;
+        text-shadow: -1px -1px 0 red, 1px -1px 0 red, -1px 1px 0 red,
+            1px 1px 0 red;
+    }
+
+    .firework {
+        background-color: darkmagenta;
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        margin: auto;
+        max-width: 100%;
+        max-height: 100%;
+        overflow: auto;
+    }
+
+    /* Make layout center browser */
+    #container {
+        width: 100%;
+        height: 600px;
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        margin: auto;
+        max-width: 100%;
+        max-height: 100%;
+        overflow: auto;
+    }
+</style>
+
+</html>

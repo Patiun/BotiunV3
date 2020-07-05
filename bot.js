@@ -126,6 +126,18 @@ app.get("/test", function (req, res) {
   res.sendFile("Test.html", publicHtmlConfig);
 });
 
+app.get("/firework", function (req, res) {
+  res.sendFile("Fireworks.html", publicHtmlConfig);
+})
+
+app.get("/five_lives/firework", function (req, res) {
+  res.sendFile("fiveLivesFireworks.html", publicHtmlConfig);
+})
+
+app.get("/overlay/orcishfiddler", function (req, res) {
+  res.sendFile("mainOverlayEiagra.html", publicHtmlConfig);
+});
+
 app.get("/Orc-Dance-01", function (req, res) {
   res.sendFile("Eiagra-Sexy-Dance-01.webm", publicHtmlConfig);
 });
@@ -219,7 +231,7 @@ stdin.addListener("data", function (d) {
           console.log(channel + " was already connected to.");
           break;
         } else {
-          console.log("Tryin to conenct to " + channel);
+          console.log("Trying to connect to " + channel);
           connectToChannel(channel);
         }
       }
@@ -272,14 +284,65 @@ stdin.addListener("data", function (d) {
         console.log("No channel specified.");
       }
       break;
+    case "raffles":
+      if (inputParams.length > 1) {
+        let channel = inputParams[1].toLowerCase();
+        if (timers[channel]) {
+          if (timers[channel].raffles) {
+            console.log("Stopping Raffles");
+            clearTimeout(timers[channel].raffles);
+          } else {
+            console.log("Starting Random Raffles");
+            timers[channel].raffles = setTimeout(() => {
+              randomRaffle(channel);
+            }, (Math.floor(Math.random() * 10) + 5) * 60 * 1000)
+          }
+        } else {
+          console.log("Channel " + channel + " is not connected");
+        }
+      } else {
+        console.log("No channel specified.");
+      }
+      break;
+    case "firework":
+      io.sockets.emit('playFirework', { channel: 'patiun' });
+      break;
+    case "fireworks":
+      fwCount = 0;
+      fireFireworkChain();
+      break;
     case "close":
     case "exit":
+      connection.end();
       process.exit();
       break;
     default:
       break;
   }
 });
+
+//TODO TEMP
+let fwCount = 0;
+function fireFireworkChain() {
+  io.sockets.emit('playFirework', { channel: 'patiun' });
+  fwCount += 1;
+  if (fwCount < 10) {
+    setTimeout(() => { fireFireworkChain(); }, Math.random(2000) + Math.random(800) * Math.random(800) + 350);
+  }
+}
+
+
+function randomRaffle(channel) {
+  let amount = (Math.floor(Math.random() * 15) + 5) * 100;
+
+  sendMessage(channel, "!raffle " + amount)
+  fwCount = 0;
+  fireFireworkChain();
+
+  timers[channel].raffles = setTimeout(() => {
+    randomRaffle(channel);
+  }, (Math.floor(Math.random() * 10) + 5) * 60 * 1000)
+}
 //#endregion
 //----------------------------------------------------------------------------------
 // ~~~~~~~~~~~~~~~~~VVVVVVVVVVVVVVVVVV Functions VVVVVVVVVVVVVVVVVV~~~~~~~~~~~~~~~~~
@@ -473,8 +536,10 @@ function parseEventData(data) {
 
 async function handleJoin(channel, username, data) {
   let indexOfUsername = users[channel].indexOf(username);
+  let firstJoin = false;
   if (indexOfUsername === -1) {
     //First join
+    firstJoin = true;
     users[channel].push(username);
     seenUsers[channel].push(username);
   }
@@ -485,10 +550,10 @@ async function handleJoin(channel, username, data) {
         return;
       }
       let userData = result[0];
-      if (userData.vip) {
+      if (firstJoin && userData.vip) {
         playSoundToOverlay(channel, 'Entrance-Fanfair-Shrek.mp3');
       }
-      if (userData.mod) {
+      if (firstJoin && userData.mod) {
         //TODO Imperial March
       }
     }).catch(error => { console.log(error) });
@@ -843,7 +908,7 @@ async function saveMessageFromUser(channel, username, message, badges, data) {
   //UPDATE USER
   query(`
   UPDATE user
-  SET broadcaster = ${broadcaster}, vip = ${vip}, \`mod\` = ${mod}, sub1 = ${sub1}, sub2 = ${sub2}, sub3 = ${sub3}, command = ${command}, lastSeen = ${lastSeen}
+  SET broadcaster = ${broadcaster}, vip = ${vip}, \`mod\` = ${mod}, sub1 = ${sub1}, sub2 = ${sub2}, sub3 = ${sub3}, lastSeen = ${lastSeen}
   WHERE twitchId = '${username}' AND channel = '${channel}';
   `)
     .then(result => {
@@ -853,8 +918,8 @@ async function saveMessageFromUser(channel, username, message, badges, data) {
 
   //SAVE MESSAGE CONTENTS
   await query(`
-  INSERT INTO messages (twitchId, channel, badgeDetails, message, timeStamp)
-  VALUE ('${username}','${channel}','${JSON.stringify(badges)}',"${message}",${data.timeStamp});
+  INSERT INTO messages (twitchId, channel, badgeDetails, message, command, timeStamp)
+  VALUE ('${username}','${channel}','${JSON.stringify(badges)}',"${message}",${command},${data.timeStamp});
   `)
     .then(result => {
 
@@ -959,15 +1024,67 @@ function processMessage(channel, username, payload, badgeData, data) {
   let sexyOrcUsers = ["eiagra", "streamelements"];
   if (
     sexyOrcUsers.includes(username.toLowerCase()) ||
-    superUsers.includes(username.toLowerCase())
+    superUsers.includes(username.toLowerCase() || username.toLowerCase() === channel)
   ) {
     if (
       cleanedTokens.includes("orcs") &&
       cleanedTokens.includes("beefy") &&
       cleanedTokens.includes("negotiable")
     ) {
-      io.sockets.emit("orcDance01");
+      io.sockets.emit("orcDance01", { channel: channel });
     }
+  }
+
+  //Fireworks
+  if (cleanedTokens[0] === '!firework' || cleanedTokens[0] === '!fireworks' || cleanedTokens[0] === '!fw') {
+    let dataPacket = { channel: channel };
+    if (cleanedTokens.length > 1) {
+      switch (cleanedTokens[1]) {
+        case 'b':
+        case 'blue':
+          dataPacket.fireworkName = 'fw_blue.gif';
+          break;
+        case 'c':
+        case 'cyan':
+        case 't':
+        case 'teal':
+          dataPacket.fireworkName = 'fw_cyan.gif';
+          break;
+        case 'g':
+        case 'green':
+          dataPacket.fireworkName = 'fw_green.gif';
+          break;
+        case 'i':
+        case 'indigo':
+          dataPacket.fireworkName = 'fw_indigo.gif';
+          break;
+        case 'o':
+        case 'orange':
+          dataPacket.fireworkName = 'fw_orange.gif';
+          break;
+        case 'pink':
+          dataPacket.fireworkName = 'fw_pink.gif';
+          break;
+        case 'p':
+        case 'purple':
+          dataPacket.fireworkName = 'fw_purple.gif';
+          break;
+        case 'r':
+        case 'red':
+          dataPacket.fireworkName = 'fw_red.gif';
+          break;
+        case 'w':
+        case 'white':
+          dataPacket.fireworkName = 'fw_white.gif';
+          break;
+        case 'y':
+        case 'yellow':
+          dataPacket.fireworkName = 'fw_yellow.gif';
+          break;
+
+      }
+    }
+    io.sockets.emit('playFirework', dataPacket);
   }
 }
 //#endregion
@@ -1023,10 +1140,19 @@ VALUES
   ${s3},
   ${lastSeen});`)
           .then((result) => {
-            resolve(result);
           })
           .catch((error) => {
-            reject(error);
+          });
+        await query(`
+          INSERT INTO \`botiun\`.\`currency\`
+          (\`twitchId\`,
+          \`channel\`)
+          VALUES
+          ('${username}',
+            '${channel}');`)
+          .then((result) => {
+          })
+          .catch((error) => {
           });
       } else {
         await query(`UPDATE \`botiun\`.\`user\` SET lastSeen = ${lastSeen} WHERE twitchId = '${username}' AND channel = '${channel}'`)
