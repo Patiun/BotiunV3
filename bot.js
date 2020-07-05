@@ -1067,6 +1067,8 @@ function processMessage(channel, username, payload, badgeData, data) {
           break;
         case 'p':
         case 'purple':
+        case 'v':
+        case 'violet':
           dataPacket.fireworkName = 'fw_purple.gif';
           break;
         case 'r':
