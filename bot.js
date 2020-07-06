@@ -116,15 +116,19 @@ server.listen(port, () => {
   console.log(`Web Server listening at port ${port}`);
 });
 app.get("/", function (req, res) {
-  res.send({ data: "Patiun" });
+  res.sendFile("index.html", publicHtmlConfig);
 });
 
 app.use(express.static("Sounds"));
 app.use(express.static("Public_Html"));
 
 app.get("/test", function (req, res) {
-  res.sendFile("Test.html", publicHtmlConfig);
+  res.sendFile("index.html", publicHtmlConfig);
 });
+
+app.get("/overlay", function (req, res) {
+  res.sendFile("Test.html", publicHtmlConfig);
+})
 
 app.get("/firework", function (req, res) {
   res.sendFile("Fireworks.html", publicHtmlConfig);
@@ -1091,11 +1095,11 @@ function processMessage(channel, username, payload, badgeData, data) {
     }
   }
 
-  //Fireworks - Redemption
+  //Channel Point Redemptions
   if (data['custom-reward-id']) {
+    //Fireworks - Redemption
     if (data['custom-reward-id'] === 'dcc5a130-23e3-4090-bbbd-e0f10d2b2d94') { //Patiun Channel Only
       if (cleanedTokens.length > 1) {
-        //cleanedTokens.shift();
         if (cleanedTokens.length > 7) {
           cleanedTokens = cleanedTokens.splice(0, 7);
         }
