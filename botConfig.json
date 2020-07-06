@@ -2,15 +2,21 @@
     "botName": "Botiun",
     "token": "oauth:2fsg30d1plxe20drjrb8s3lzwp91l6",
     "clientId": "95kreu7tyixtgfqd9oe575hjttox0j",
-    "superUsers":["patiun"],
+    "superUsers": [
+        "patiun"
+    ],
     "files": {
         "channels": "./channels.data",
         "ignoredUsers": "./ignoredUsers.data"
     },
     "db": {
-        "host":"35.223.208.238",
-        "user":"root",
-        "password":"77ltEBOlaf2O8pzC",
-        "database":"botiun"
+        "host": "35.223.208.238",
+        "user": "root",
+        "password": "77ltEBOlaf2O8pzC",
+        "database": "botiun"
+    },
+    "cert": {
+        "key": "/etc/letsencrypt/live/patiun.com/privkey.pem",
+        "cert": "/etc/letsencrypt/live/patiun.com/fullchain.pem"
     }
 }

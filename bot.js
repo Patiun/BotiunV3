@@ -13,6 +13,10 @@ const botConfig = require("./botConfig.json");
 const { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } = require("constants");
 const fileChannels = botConfig.files.channels;
 const fileIgnoredUsers = botConfig.files.ignoredUsers;
+const ssl = {
+  key: fs.readFileSync(botConfig.cert.key),
+  cert: fs.readFileSync(botConfig.cert.cert)
+}
 //#endregion
 
 //#region Botiun Authentication Stuffs
@@ -107,7 +111,7 @@ process.on("exit", () => {
 //#region Web Server
 const port = process.env.PORT || 4001;
 const app = express();
-const server = http.createServer(app);
+const server = http.createServer(ssl,app);
 const io = socketIo(server);
 const publicHtmlConfig = { root: "./Public_Html" };
 const soundConfig = { root: "./Sounds" };
@@ -907,6 +911,10 @@ async function saveMessageFromUser(channel, username, message, badges, data) {
   let sub3 = ((badges.subscriber) && (badges.subscriber >= 3000)) ? 1 : 0;
   let command = (message.charAt(0) === '!') ? 1 : 0;
 
+  if (data['custom-reward-id']) {
+    command = 1; //Channel Point Redemption TODO make this better?
+  }
+
   message = message.replace(/"/g, '\\"');
 
   //UPDATE USER
@@ -1103,6 +1111,7 @@ function processMessage(channel, username, payload, badgeData, data) {
         if (cleanedTokens.length > 7) {
           cleanedTokens = cleanedTokens.splice(0, 7);
         }
+        //console.log("Firework Tokens:",cleanedTokens);
         fireFirework(cleanedTokens);
       } else {
         io.sockets.emit('playFirework', { channel: channel });

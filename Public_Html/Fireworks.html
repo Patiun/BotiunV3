@@ -3,7 +3,7 @@
 
 <head>
     <title>Botiun Fireworks</title>
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
         //Option 1
@@ -84,7 +84,7 @@
             var socket = io();
             //Play Sound
             socket.on("playFirework", function (data) {
-                console.log("Recieved play");
+                console.log("Recieved Firework");
                 let channel = data.channel;
                 if (channel === CHANNEL) {
                     let fireworkName = data.fireworkName;
