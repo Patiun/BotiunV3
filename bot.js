@@ -985,7 +985,9 @@ function processMessage(channel, username, payload, badgeData, data) {
   //Nani
   if (
     cleanedTokens.indexOf("nani") >= 0 ||
-    cleanedTokens.indexOf("!nani") >= 0
+    cleanedTokens.indexOf("!nani") >= 0 ||
+    cleanedTokens.indexOf("nani!") >= 0 ||
+    cleanedTokens.indexOf("nani?") >= 0
   ) {
     playSoundToOverlay(channel, "nani.mp3");
     /* Propper logic turned off for the memes
@@ -1035,58 +1037,73 @@ function processMessage(channel, username, payload, badgeData, data) {
     }
   }
 
-  //Fireworks
-  if (cleanedTokens[0] === '!firework' || cleanedTokens[0] === '!fireworks' || cleanedTokens[0] === '!fw') {
+  function fireFirework(fireworkTokens) {
     let dataPacket = { channel: channel };
-    if (cleanedTokens.length > 1) {
-      switch (cleanedTokens[1]) {
-        case 'b':
-        case 'blue':
-          dataPacket.fireworkName = 'fw_blue.gif';
-          break;
-        case 'c':
-        case 'cyan':
-        case 't':
-        case 'teal':
-          dataPacket.fireworkName = 'fw_cyan.gif';
-          break;
-        case 'g':
-        case 'green':
-          dataPacket.fireworkName = 'fw_green.gif';
-          break;
-        case 'i':
-        case 'indigo':
-          dataPacket.fireworkName = 'fw_indigo.gif';
-          break;
-        case 'o':
-        case 'orange':
-          dataPacket.fireworkName = 'fw_orange.gif';
-          break;
-        case 'pink':
-          dataPacket.fireworkName = 'fw_pink.gif';
-          break;
-        case 'p':
-        case 'purple':
-        case 'v':
-        case 'violet':
-          dataPacket.fireworkName = 'fw_purple.gif';
-          break;
-        case 'r':
-        case 'red':
-          dataPacket.fireworkName = 'fw_red.gif';
-          break;
-        case 'w':
-        case 'white':
-          dataPacket.fireworkName = 'fw_white.gif';
-          break;
-        case 'y':
-        case 'yellow':
-          dataPacket.fireworkName = 'fw_yellow.gif';
-          break;
-
-      }
+    switch (fireworkTokens[0]) {
+      case 'b':
+      case 'blue':
+        dataPacket.fireworkName = 'fw_blue.gif';
+        break;
+      case 'c':
+      case 'cyan':
+      case 't':
+      case 'teal':
+        dataPacket.fireworkName = 'fw_cyan.gif';
+        break;
+      case 'g':
+      case 'green':
+        dataPacket.fireworkName = 'fw_green.gif';
+        break;
+      case 'i':
+      case 'indigo':
+        dataPacket.fireworkName = 'fw_indigo.gif';
+        break;
+      case 'o':
+      case 'orange':
+        dataPacket.fireworkName = 'fw_orange.gif';
+        break;
+      case 'pink':
+        dataPacket.fireworkName = 'fw_pink.gif';
+        break;
+      case 'p':
+      case 'purple':
+      case 'v':
+      case 'violet':
+        dataPacket.fireworkName = 'fw_purple.gif';
+        break;
+      case 'r':
+      case 'red':
+        dataPacket.fireworkName = 'fw_red.gif';
+        break;
+      case 'w':
+      case 'white':
+        dataPacket.fireworkName = 'fw_white.gif';
+        break;
+      case 'y':
+      case 'yellow':
+        dataPacket.fireworkName = 'fw_yellow.gif';
+        break;
     }
     io.sockets.emit('playFirework', dataPacket);
+    fireworkTokens.shift();
+    if (fireworkTokens.length > 0) {
+      setTimeout(() => { fireFirework(fireworkTokens); }, 500);
+    }
+  }
+
+  //Fireworks - Redemption
+  if (data['custom-reward-id']) {
+    if (data['custom-reward-id'] === 'dcc5a130-23e3-4090-bbbd-e0f10d2b2d94') { //Patiun Channel Only
+      if (cleanedTokens.length > 1) {
+        //cleanedTokens.shift();
+        if (cleanedTokens.length > 7) {
+          cleanedTokens = cleanedTokens.splice(0, 7);
+        }
+        fireFirework(cleanedTokens);
+      } else {
+        io.sockets.emit('playFirework', { channel: channel });
+      }
+    }
   }
 }
 //#endregion
