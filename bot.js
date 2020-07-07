@@ -1103,6 +1103,24 @@ function processMessage(channel, username, payload, badgeData, data) {
     }
   }
 
+  //Pyramid Response
+  //RAW: "StreamElements nice 3-width Squid3 pyramid soccerj_ LUL"
+  if (username.toLowerCase() === 'streamelements' && cleanedTokens.includes('pyramid')) {
+    let countRaw = cleanedTokens[2];
+    try {
+      let count = parseInt(countRaw.split('-')[0]); //TOSO search for this
+      if (count > 0) {
+        let fakeTokens = [];
+        for (let i = 0; i < count; i++) {
+          fakeTokens.push("firework");
+        }
+        fireFirework(fakeTokens);
+      }
+    }catch(error) {
+      console.log(error);
+    }
+  }
+
   //Channel Point Redemptions
   if (data['custom-reward-id']) {
     //Fireworks - Redemption
