@@ -1106,9 +1106,15 @@ function processMessage(channel, username, payload, badgeData, data) {
   //Pyramid Response
   //RAW: "StreamElements nice 3-width Squid3 pyramid soccerj_ LUL"
   if (username.toLowerCase() === 'streamelements' && cleanedTokens.includes('pyramid')) {
-    let countRaw = cleanedTokens[2];
     try {
-      let count = parseInt(countRaw.split('-')[0]); //TOSO search for this
+      let count = 0
+      for ( let i = 0; i < cleanedTokens.length; i++) {
+        let match = cleanedTokens[i].match(/[0-9]*-width/);
+        if (match) {
+          count = parseInt(cleanedTokens[i].split('-')[0]);
+          break;
+        }
+      }
       if (count > 0) {
         let fakeTokens = [];
         for (let i = 0; i < count; i++) {
