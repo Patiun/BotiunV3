@@ -1050,8 +1050,9 @@ function processMessage(channel, username, payload, badgeData, data) {
   }
 
   function fireFirework(fireworkTokens) {
+    console.log(fireworkTokens);
     let dataPacket = { channel: channel };
-    switch (fireworkTokens[0]) {
+    switch (fireworkTokens[0].replace(/\W/g, '').toLowerCase()) {
       case 'b':
       case 'blue':
         dataPacket.fireworkName = 'fw_blue.gif';
