@@ -142,7 +142,7 @@ app.get("/five_lives/firework", function (req, res) {
   res.sendFile("fiveLivesFireworks.html", publicHtmlConfig);
 })
 
-app.get("/overlay/orcishfiddler", function (req, res) {
+app.get("/overlay_orcishfiddler", function (req, res) {
   res.sendFile("mainOverlayEiagra.html", publicHtmlConfig);
 });
 
@@ -1035,7 +1035,7 @@ function processMessage(channel, username, payload, badgeData, data) {
     }
   }
   //Sexy Orc Dance 01
-  let sexyOrcUsers = ["eiagra", "streamelements"];
+  let sexyOrcUsers = ["eiagra", "streamelements", "okretrozone", "edgahallanpwn"];
   if (
     sexyOrcUsers.includes(username.toLowerCase()) ||
     superUsers.includes(username.toLowerCase() || username.toLowerCase() === channel)
