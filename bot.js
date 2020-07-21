@@ -11,6 +11,7 @@ var mysql = require('mysql');
 //#region File locations
 const botConfig = require("./botConfig.json");
 const { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } = require("constants");
+const { runInNewContext } = require("vm");
 const fileChannels = botConfig.files.channels;
 const fileIgnoredUsers = botConfig.files.ignoredUsers;
 const ssl = {
@@ -68,10 +69,10 @@ let seenUsers = {};
 let messages = {};
 
 //settings
-let verbose = true;
+let verbose = false;
 let settings = {};
 let settingDefault = {
-  messages: true,
+  messages: false,
 };
 const messageStorageLimit = 100;
 //#endregion
@@ -111,7 +112,7 @@ process.on("exit", () => {
 //#region Web Server
 const port = process.env.PORT || 4001;
 const app = express();
-const server = http.createServer(ssl,app);
+const server = http.createServer(ssl, app);
 const io = socketIo(server);
 const publicHtmlConfig = { root: "./Public_Html" };
 const soundConfig = { root: "./Sounds" };
@@ -128,6 +129,18 @@ app.use(express.static("Public_Html"));
 
 app.get("/test", function (req, res) {
   res.sendFile("index.html", publicHtmlConfig);
+});
+
+app.get("/api/test", function (req, res) {
+  let data = {
+    headers: req.headers,
+    params: req.params,
+    body: req.body,
+    query: req.query,
+    cookies: req.cookies,
+    signedCookies: req.signedCookies
+  }
+  res.send(data);
 });
 
 app.get("/overlay", function (req, res) {
@@ -1035,10 +1048,11 @@ function processMessage(channel, username, payload, badgeData, data) {
     }
   }
   //Sexy Orc Dance 01
-  let sexyOrcUsers = ["eiagra", "streamelements", "okretrozone", "edgahallanpwn"];
+  let sexyOrcUsers = ["eiagra", "orcishfiddler", "streamelements", "okretrozone", "edgahallanpwn"];
   if (
     sexyOrcUsers.includes(username.toLowerCase()) ||
-    superUsers.includes(username.toLowerCase() || username.toLowerCase() === channel)
+    superUsers.includes(username.toLowerCase()) ||
+    username.toLowerCase() === channel.toLowerCase()
   ) {
     if (
       cleanedTokens.includes("orcs") &&
@@ -1109,7 +1123,7 @@ function processMessage(channel, username, payload, badgeData, data) {
   if (username.toLowerCase() === 'streamelements' && cleanedTokens.includes('pyramid')) {
     try {
       let count = 0
-      for ( let i = 0; i < cleanedTokens.length; i++) {
+      for (let i = 0; i < cleanedTokens.length; i++) {
         let match = cleanedTokens[i].match(/[0-9]*-width/);
         if (match) {
           count = parseInt(cleanedTokens[i].split('-')[0]);
@@ -1123,7 +1137,7 @@ function processMessage(channel, username, payload, badgeData, data) {
         }
         fireFirework(fakeTokens);
       }
-    }catch(error) {
+    } catch (error) {
       console.log(error);
     }
   }
